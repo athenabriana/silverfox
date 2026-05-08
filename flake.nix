@@ -1,8 +1,13 @@
 {
-  description = "sideral — niri compositor + Noctalia shell on NixOS, 1:1 port of the Fedora atomic flavor.";
+  description = "sideral — niri compositor + Noctalia shell on NixOS.";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
+
+    # noctalia-shell + noctalia-qs landed in nixos-unstable but haven't
+    # made it to the 25.11 release yet. Cherry-pick from unstable via
+    # an overlay; the rest of the system stays on the stable channel.
+    nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
 
     home-manager = {
       url = "github:nix-community/home-manager/release-25.11";
@@ -15,36 +20,36 @@
   outputs = inputs @ {
     self,
     nixpkgs,
+    nixpkgs-unstable,
     home-manager,
     nix-flatpak,
     ...
   }: let
     system = "x86_64-linux";
     pkgs = nixpkgs.legacyPackages.${system};
+    unstable = nixpkgs-unstable.legacyPackages.${system};
+
+    overlay-unstable = _final: _prev: {
+      inherit (unstable) noctalia-shell noctalia-qs;
+    };
+
+    mkSystem = host:
+      nixpkgs.lib.nixosSystem {
+        inherit system;
+        modules = [
+          host
+          {nixpkgs.overlays = [overlay-unstable];}
+        ];
+        specialArgs = {inherit inputs self;};
+      };
   in {
     nixosConfigurations = {
-      sideral = nixpkgs.lib.nixosSystem {
-        inherit system;
-        modules = [./hosts/sideral.nix];
-        specialArgs = {inherit inputs self;};
-      };
-
-      sideral-nvidia = nixpkgs.lib.nixosSystem {
-        inherit system;
-        modules = [./hosts/sideral-nvidia.nix];
-        specialArgs = {inherit inputs self;};
-      };
-
-      sideral-iso = nixpkgs.lib.nixosSystem {
-        inherit system;
-        modules = [./hosts/sideral-iso.nix];
-        specialArgs = {inherit inputs self;};
-      };
+      sideral = mkSystem ./hosts/sideral.nix;
+      sideral-nvidia = mkSystem ./hosts/sideral-nvidia.nix;
+      sideral-iso = mkSystem ./hosts/sideral-iso.nix;
     };
 
     packages.${system} = {
-      noctalia-shell = pkgs.callPackage ./pkgs/noctalia-shell {};
-      noctalia-qs = pkgs.callPackage ./pkgs/noctalia-qs {};
       sideral-iso = self.nixosConfigurations.sideral-iso.config.system.build.isoImage;
       default = self.packages.${system}.sideral-iso;
     };
