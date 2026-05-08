@@ -17,7 +17,7 @@ stdenv.mkDerivation rec {
     owner = "noctalia-dev";
     repo = "noctalia-qs";
     rev = "v${version}";
-    hash = lib.fakeHash;
+    hash = "sha256-79JP2QTdvp1jg7HGxAW+xzhzhLnlKUi8yGXq9nDCeH0=";
   };
 
   nativeBuildInputs = [
