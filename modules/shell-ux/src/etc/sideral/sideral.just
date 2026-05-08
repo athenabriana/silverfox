@@ -13,7 +13,6 @@
 # Examples:
 #   njust chsh           # interactive picker
 #   njust chsh zsh       # → /run/current-system/sw/bin/zsh  (default)
-#   njust chsh nu        # → /run/current-system/sw/bin/nu
 #   njust chsh bash      # → /run/current-system/sw/bin/bash
 [group('System')]
 chsh shell="":
@@ -22,20 +21,19 @@ chsh shell="":
     selected="{{shell}}"
     if [ -z "$selected" ]; then
         if command -v gum >/dev/null 2>&1; then
-            selected="$(gum choose zsh nu bash)" || exit 0
+            selected="$(gum choose zsh bash)" || exit 0
         elif command -v fzf >/dev/null 2>&1; then
-            selected="$(printf 'zsh\nnu\nbash\n' | fzf --height=10 --prompt='Login shell: ')" || exit 0
+            selected="$(printf 'zsh\nbash\n' | fzf --height=10 --prompt='Login shell: ')" || exit 0
         else
-            echo "Pass a shell name explicitly: njust chsh [bash|zsh|nu]" >&2
+            echo "Pass a shell name explicitly: njust chsh [bash|zsh]" >&2
             exit 1
         fi
     fi
     case "$selected" in
         bash) target="$(command -v bash)" ;;
-        nu)   target="$(command -v nu)" ;;
         zsh)  target="$(command -v zsh)" ;;
         *)
-            echo "Unknown shell: $selected (try: bash, zsh, nu)" >&2
+            echo "Unknown shell: $selected (try: bash, zsh)" >&2
             exit 1
             ;;
     esac
@@ -104,7 +102,6 @@ tools:
 
     ${B}Shells${R} — zsh is default; bash always present
       njust chsh        switch (default: zsh)
-      njust chsh nu     nushell — structured-data-first
       njust chsh bash   stay on bash
 
     ${B}Other njust recipes${R}
@@ -265,7 +262,7 @@ chezmoi:
     ${D}Manages your personal dotfiles from a git repo.${R}
 
     ${B}Image defaults${R}
-      Image defaults (niri/noctalia/ghostty/mise/nushell/bashrc/zshrc/...)
+      Image defaults (niri/noctalia/ghostty/mise/bashrc/zshrc/...)
       are materialised by home-manager at \`nixos-rebuild switch\` time.
       No first-login bootstrap. To refresh after an image update:
         sudo nixos-rebuild switch --flake .#sideral

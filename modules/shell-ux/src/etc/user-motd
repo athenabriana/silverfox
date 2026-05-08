@@ -6,7 +6,7 @@
     njust                            list every recipe
     njust niri                       niri + Noctalia keybinds + theming guide
     njust tools                      cheatsheet of CLIs / aliases / keybinds
-    njust chsh [bash|nu|zsh]         switch login shell (default: zsh)
+    njust chsh [bash|zsh]            switch login shell (default: zsh)
     njust chezmoi-init <repo-url>    bootstrap dotfiles from your chezmoi repo
     njust gdrive-setup               auto-mount Google Drive at ~/gdrive
     njust theme <wallpaper>          regenerate Material 3 palette

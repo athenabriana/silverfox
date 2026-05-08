@@ -47,7 +47,7 @@ After the switch the system is fully wired — niri session via greetd+regreet, 
 
 ---
 
-Built directly on `nixpkgs/nixos-25.11`. Ships the [niri](https://github.com/YaLTeR/niri) scrollable-tiling compositor with [Noctalia](https://github.com/noctalia-dev/noctalia-shell) as the desktop shell, a curated set of CLI tools sourced from nixpkgs (chezmoi, mise, atuin, fzf, bat, eza, ripgrep, zoxide, gh, git-lfs, helix, nushell, vscode, …), Zen Browser (Flathub via `nix-flatpak`), rootless podman with docker compatibility, and matugen-driven wallpaper theming. User dotfiles are seeded by [home-manager](https://github.com/nix-community/home-manager).
+Built directly on `nixpkgs/nixos-25.11`. Ships the [niri](https://github.com/YaLTeR/niri) scrollable-tiling compositor with [Noctalia](https://github.com/noctalia-dev/noctalia-shell) as the desktop shell, a curated set of CLI tools sourced from nixpkgs (chezmoi, mise, atuin, fzf, bat, eza, ripgrep, zoxide, yazi, gh, git-lfs, helix, vscode, …), Zen Browser (Flathub via `nix-flatpak`), rootless podman with docker compatibility, and matugen-driven wallpaper theming. User dotfiles are seeded by [home-manager](https://github.com/nix-community/home-manager).
 
 ## What's in the image
 
@@ -62,8 +62,8 @@ Built directly on `nixpkgs/nixos-25.11`. Ships the [niri](https://github.com/YaL
 | **Browser** | [Zen Browser](https://zen-browser.app) (`app.zen_browser.zen` from Flathub). Materialised declaratively by `nix-flatpak`. |
 | **Editor** | `code` (VS Code) from nixpkgs (`allowUnfree = true`). `hx` (Helix) from nixpkgs. |
 | **Containers** | Rootless podman + `dockerCompat` + podman-compose. `docker` CLI resolves to podman. No daemon. |
-| **CLI toolset** | `chezmoi`, `mise`, `atuin`, `fzf`, `bat`, `eza`, `ripgrep`, `zoxide`, `gh`, `git-lfs`, `gcc`, `make`, `cmake`, `helix`, `nushell`, `zsh`, `rclone`, `starship`, `vscode` — all from nixpkgs `nixos-25.11`. |
-| **Shell-init wiring** | `programs.{starship,atuin,zoxide,fzf,bat,eza,nushell}.enable` via home-manager seed each user's shell with starship + atuin + zoxide + mise + fzf integrations. `~/.bashrc` / `~/.zshrc` carry the AI-agent-alias-suppression guard byte-identical to the Fedora flavor. |
+| **CLI toolset** | `chezmoi`, `mise`, `atuin`, `fzf`, `bat`, `eza`, `ripgrep`, `zoxide`, `yazi`, `gh`, `git-lfs`, `gcc`, `make`, `cmake`, `helix`, `zsh`, `rclone`, `starship`, `vscode` — all from nixpkgs `nixos-25.11`. |
+| **Shell-init wiring** | `programs.{starship,atuin,zoxide,fzf,bat,eza,yazi}.enable` via home-manager seed each user's shell with starship + atuin + zoxide + mise + fzf + yazi integrations. `~/.bashrc` / `~/.zshrc` carry the AI-agent-alias-suppression guard byte-identical to the Fedora flavor. |
 | **Fonts** | Cascadia Code, JetBrains Mono, Adwaita, OpenDyslexic, Source Serif, Source Sans, Noto + Noto-Emoji + Noto-CJK — all from nixpkgs. |
 | **User dotfiles** | Seeded by home-manager (`home.file` + `xdg.configFile`) at activation — no first-login bootstrap. Bring your own personal dotfiles with `chezmoi init --apply <your-repo>` — see below. |
 | **Flatpaks (preinstalled)** | Zen Browser, Bazaar, Flatseal, Extension Manager, Podman Desktop, DistroShelf, Resources, Smile, Web App Hub, Pika Backup, Junction (all from Flathub). Single curated remote: `flathub`. Managed declaratively by [`nix-flatpak`](https://github.com/gmodena/nix-flatpak) — drop a ref from the manifest and the next `nixos-rebuild switch` uninstalls it. |
@@ -109,7 +109,7 @@ There is no in-place upgrade path from Fedora-flavor sideral (on `main`) to NixO
 2. Flash the sideral NixOS ISO (link above) and install fresh on the same disk.
 3. Restore your data into `~/`. Re-run `chezmoi init --apply <your-repo>` if you bring your own dotfiles repo.
 
-Configurations carry over byte-identical between the two flavors — niri config, Noctalia settings, ghostty config, mise toolchain, nushell config, matugen templates, kanata `.kbd` are the same files in both branches.
+Configurations carry over byte-identical between the two flavors — niri config, Noctalia settings, ghostty config, mise toolchain, matugen templates, kanata `.kbd` are the same files in both branches.
 
 ## Repo layout
 
@@ -125,7 +125,7 @@ sideral/
 │   └── sideral-iso.nix                # installer-only ISO host (calamares + branding)
 ├── modules/                           # each capability owns one directory
 │   ├── base/          /etc/os-release identity + containers/policy.json
-│   ├── cli-tools/     systemPackages: chezmoi/mise/atuin/eza/bat/rg/zoxide/gh/helix/nushell/...
+│   ├── cli-tools/     systemPackages: chezmoi/mise/atuin/eza/bat/rg/zoxide/yazi/gh/helix/...
 │   ├── fonts/         fonts.packages
 │   ├── services/      podman + dockerCompat + flatpak + distrobox
 │   ├── kubernetes/    kubectl + kind + helm + KIND_EXPERIMENTAL_PROVIDER env
@@ -179,7 +179,7 @@ just rollback     # sudo nixos-rebuild switch --rollback
 
 ## Set up dotfiles
 
-sideral seeds your `~/.config` directly at activation via home-manager — niri config, Noctalia settings, matugen config + templates, shell configs for bash/zsh/nushell, and a mise toolchain stub. There is no first-login bootstrap; the files appear the first time `nixos-rebuild switch` runs. After every system update they're refreshed automatically:
+sideral seeds your `~/.config` directly at activation via home-manager — niri config, Noctalia settings, matugen config + templates, shell configs for bash/zsh, and a mise toolchain stub. There is no first-login bootstrap; the files appear the first time `nixos-rebuild switch` runs. After every system update they're refreshed automatically:
 
 ```bash
 sudo nixos-rebuild switch --flake .#sideral
@@ -213,10 +213,9 @@ Why home-manager + chezmoi as a hybrid? home-manager is the single-source-of-tru
 
 | Tool | Source |
 | --- | --- |
-| `chezmoi`, `mise`, `atuin`, `fzf`, `bat`, `eza`, `ripgrep`, `zoxide`, `gh`, `git-lfs`, `gcc`, `gnumake`, `cmake`, `helix`, `nushell`, `zsh`, `rclone`, `chromium`, `starship` | nixpkgs `nixos-25.11` (`environment.systemPackages` in `modules/cli-tools/default.nix`) |
+| `chezmoi`, `mise`, `atuin`, `fzf`, `bat`, `eza`, `ripgrep`, `zoxide`, `yazi`, `gh`, `git-lfs`, `gcc`, `gnumake`, `cmake`, `helix`, `zsh`, `rclone`, `chromium`, `starship` | nixpkgs `nixos-25.11` (`environment.systemPackages` in `modules/cli-tools/default.nix`) |
 | `vscode` | nixpkgs (requires `allowUnfree = true`, set in `hosts/common.nix`) |
 | `carapace` | nixpkgs |
-| Nushell plugins (`query`, `formats`, `gstat`) | nixpkgs `nushellPlugins.<name>` derivations, wired at `/etc/nushell/plugins/` |
 
 To remove a tool: drop it from `modules/cli-tools/default.nix` and run `sudo nixos-rebuild switch --flake .#sideral`. The home-manager-seeded shell init (`programs.{starship,atuin,zoxide,fzf,bat,eza}.enable`) `command -v`-guards each integration so removing any single tool is safe.
 
@@ -237,7 +236,7 @@ The Fedora atomic flavor on `main` ships the same daily-driver experience via rp
 
 1. **Atomicity & rollback are first-class** — every config change is a generation, every boot menu is a deployment, no rpm-ostree-vs-`/etc/yum.repos.d` impedance, no composefs gymnastics.
 2. **Single source of truth for system + user** — one `nixos-rebuild switch --flake .#sideral` brings up the whole machine: kernel, drivers, services, packages, dotfiles, fonts, flatpaks. No sequencing of "RPM layer first, then chezmoi on first login."
-3. **Declarative user layer is native** — home-manager's module system replaces the chezmoi seed cleanly. Dotfile contents move into HM modules; every config file (niri config.kdl, Noctalia settings.json, ghostty config, the matugen templates, the kanata `.kbd`, the nu `env.nu`/`config.nu`, the SilentSDDM theme) ships byte-for-byte unchanged.
+3. **Declarative user layer is native** — home-manager's module system replaces the chezmoi seed cleanly. Dotfile contents move into HM modules; every config file (niri config.kdl, Noctalia settings.json, ghostty config, the matugen templates, the kanata `.kbd`) ships byte-for-byte unchanged.
 
 The retired `nix-home` Fedora-overlay attempt (composefs + SELinux + `/nix`-disappears frictions) doesn't apply here — those failure modes are specifically about running nix on top of Fedora atomic 42+, not running NixOS as the OS.
 

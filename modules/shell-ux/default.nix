@@ -12,7 +12,6 @@ in {
   environment.etc = {
     "mise/config.toml".source = ./src/etc/mise/config.toml;
     "profile.d/sideral-shell-migrate.sh".source = ./src/etc/profile.d/sideral-shell-migrate.sh;
-    "profile.d/sideral-nushell-plugins.sh".source = ./src/etc/profile.d/sideral-nushell-plugins.sh;
     "sideral/sideral.just".source = ./src/etc/sideral/sideral.just;
   };
 
