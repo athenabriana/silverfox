@@ -10,7 +10,7 @@
       source-serif
       source-sans
       noto-fonts
-      noto-fonts-emoji
+      noto-fonts-color-emoji
       noto-fonts-cjk-sans
       adwaita-fonts
     ];
