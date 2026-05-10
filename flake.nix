@@ -46,12 +46,6 @@
     nixosConfigurations = {
       sideral = mkSystem ./hosts/sideral.nix;
       sideral-nvidia = mkSystem ./hosts/sideral-nvidia.nix;
-      sideral-iso = mkSystem ./hosts/sideral-iso.nix;
-    };
-
-    packages.${system} = {
-      sideral-iso = self.nixosConfigurations.sideral-iso.config.system.build.isoImage;
-      default = self.packages.${system}.sideral-iso;
     };
 
     formatter.${system} = pkgs.alejandra;

@@ -9,12 +9,6 @@ on:
   schedule:
     - cron: "5 10 * * *"
 
-env:
-  R2_ENDPOINT: https://e30740452050b87fd107356bd87f01eb.r2.cloudflarestorage.com
-  R2_BUCKET: sideral
-  R2_PUBLIC_BASE: https://sideral.athenabriana.com
-  ISO_KEY: sideral_x86_64.iso
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -60,7 +54,7 @@ jobs:
             --print-build-logs
 
   release:
-    name: Build ISO + publish release
+    name: Tag release
     runs-on: ubuntu-24.04
     needs: build
     if: >
@@ -78,17 +72,6 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Maximise disk
-        uses: ublue-os/remove-unwanted-software@v9
-
-      - name: Install Nix
-        uses: cachix/install-nix-action@v27
-        with:
-          nix_path: nixpkgs=channel:nixos-25.11
-          extra_nix_config: |
-            experimental-features = nix-command flakes
-            accept-flake-config = true
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -98,105 +81,7 @@ jobs:
       - name: Install semantic-release
         run: npm ci || npm install --no-audit --no-fund
 
-      - name: Dry-run semantic-release
-        id: dryrun
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -euo pipefail
-          OUT=$(npx semantic-release --dry-run 2>&1) || true
-          echo "$OUT"
-          NEXT=$(printf '%s\n' "$OUT" | grep -oP 'next release version is \K[0-9]+\.[0-9]+\.[0-9]+' | head -1 || true)
-          if [[ -n "$NEXT" ]]; then
-            echo "next_version=${NEXT}" >> "$GITHUB_OUTPUT"
-            echo "skip=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::Next release: v${NEXT}"
-          else
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-            echo "::notice::No release-worthy commits since last tag — skipping ISO build."
-          fi
-
-      - name: Resolve ISO name
-        id: tags
-        if: steps.dryrun.outputs.skip == 'false'
-        run: |
-          echo "iso_name=sideral-v${{ steps.dryrun.outputs.next_version }}-x86_64.iso" >> "$GITHUB_OUTPUT"
-
-      - name: Build ISO
-        if: steps.dryrun.outputs.skip == 'false'
-        run: |
-          nix build .#sideral-iso --accept-flake-config --print-build-logs
-
-      - name: Stage ISO under output/
-        if: steps.dryrun.outputs.skip == 'false'
-        run: |
-          set -euo pipefail
-          mkdir -p "${{ github.workspace }}/output"
-          ISO_PATH=$(find result/iso -maxdepth 1 -name '*.iso' | head -1)
-          if [[ -z "$ISO_PATH" ]]; then
-            echo "ERROR: no ISO produced under result/iso" >&2
-            exit 1
-          fi
-          cp -L "$ISO_PATH" "${{ github.workspace }}/output/${{ env.ISO_KEY }}"
-
-      - name: Checksum ISO
-        if: steps.dryrun.outputs.skip == 'false'
-        run: |
-          set -euo pipefail
-          cd ./output
-          sha256sum "${{ env.ISO_KEY }}" > "${{ env.ISO_KEY }}.sha256"
-          ls -lh
-
-      - name: Upload ISO + checksum to R2
-        if: steps.dryrun.outputs.skip == 'false'
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: auto
-          AWS_EC2_METADATA_DISABLED: "true"
-        run: |
-          set -euo pipefail
-          cd ./output
-          aws s3 cp "${{ env.ISO_KEY }}" "s3://${{ env.R2_BUCKET }}/${{ env.ISO_KEY }}" \
-            --endpoint-url "${{ env.R2_ENDPOINT }}" \
-            --content-type application/x-iso9660-image \
-            --no-progress
-          aws s3 cp "${{ env.ISO_KEY }}.sha256" "s3://${{ env.R2_BUCKET }}/${{ env.ISO_KEY }}.sha256" \
-            --endpoint-url "${{ env.R2_ENDPOINT }}" \
-            --content-type text/plain \
-            --no-progress
-
-      - name: semantic-release (real)
-        if: steps.dryrun.outputs.skip == 'false'
+      - name: semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npx semantic-release
-
-      - name: Append download link to release notes
-        if: steps.dryrun.outputs.skip == 'false'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -euo pipefail
-          VERSION="v${{ steps.dryrun.outputs.next_version }}"
-          ISO_KEY_ENC="$(jq -rn --arg s "${{ env.ISO_KEY }}" '$s|@uri')"
-          ISO_URL="${{ env.R2_PUBLIC_BASE }}/${ISO_KEY_ENC}"
-          SUM_URL="${{ env.R2_PUBLIC_BASE }}/${ISO_KEY_ENC}.sha256"
-          gh release view "${VERSION}" --repo "${{ github.repository }}" --json body -q .body > /tmp/notes.md
-          {
-            echo
-            echo "## Download"
-            echo
-            echo "- ISO: <${ISO_URL}>"
-            echo "- SHA256: <${SUM_URL}>"
-            echo
-            echo '```bash'
-            echo "curl -L -o '${{ env.ISO_KEY }}' ${ISO_URL}"
-            echo "curl -L -o '${{ env.ISO_KEY }}.sha256' ${SUM_URL}"
-            echo "sha256sum -c '${{ env.ISO_KEY }}.sha256'"
-            echo "sudo dd if='${{ env.ISO_KEY }}' of=/dev/sdX bs=4M status=progress oflag=sync"
-            echo '```'
-          } >> /tmp/notes.md
-          gh release edit "${VERSION}" \
-            --repo "${{ github.repository }}" \
-            --notes-file /tmp/notes.md

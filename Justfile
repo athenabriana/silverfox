@@ -1,9 +1,8 @@
-# sideral OS — local build + rebase recipes (NixOS flavor).
-#   list:        `just`
-#   build:       `just build`
-#   build-iso:   `just build-iso`
-#   rebase:      `just rebase`
-#   rollback:    `just rollback`
+# sideral — local build + rebase recipes.
+#   list:    `just`
+#   build:   `just build`
+#   rebase:  `just rebase`
+#   rollback:`just rollback`
 
 default:
     @just --list --unsorted
@@ -25,10 +24,6 @@ build:
 # Build the NVIDIA closure.
 build-nvidia:
     nix build .#nixosConfigurations.sideral-nvidia.config.system.build.toplevel
-
-# Build the installer-only ISO. Output lands in result/iso/sideral_x86_64.iso.
-build-iso:
-    nix build .#sideral-iso
 
 # Switch the running system to the local flake (open-source variant).
 rebase:

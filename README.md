@@ -12,36 +12,35 @@
 
 ## Quick start
 
-Two ways to try sideral.
+sideral is a NixOS configuration flake — install regular NixOS first (the official ISO from [nixos.org](https://nixos.org/download/) walks you through it via calamares), then swap to sideral with one command.
 
-### Boot from USB (try before installing)
+### Two-stage install
 
-<p align="center">
-  <a href="https://sideral.athenabriana.com/sideral_x86_64.iso"><img src="https://img.shields.io/badge/%E2%AC%87%20Download%20ISO-latest-3584e4?style=for-the-badge&logo=nixos&logoColor=white&labelColor=1a2a4a" alt="Download ISO" height="44"></a>
-</p>
+**Stage 1 — vanilla NixOS:** download the official NixOS ISO (the *Graphical, Plasma 6, x86_64* one from [nixos.org/download](https://nixos.org/download/)), `dd` it to a USB, boot it, and run the calamares installer. Pick whatever partition layout / username / locale you want. After install, reboot into your new NixOS.
 
-The button starts the download immediately — single ISO (~1.5 GiB target), hosted on Cloudflare R2. Verify the checksum and flash:
+**Stage 2 — switch to sideral:** in your new NixOS, open a terminal and run:
 
 ```bash
-curl -LO https://sideral.athenabriana.com/sideral_x86_64.iso
-curl -LO https://sideral.athenabriana.com/sideral_x86_64.iso.sha256
-sha256sum -c sideral_x86_64.iso.sha256
-sudo dd if=sideral_x86_64.iso of=/dev/sdX bs=4M status=progress oflag=sync
+curl -fsSL https://raw.githubusercontent.com/athenabriana/sideral/main/install.sh | sudo bash
 ```
 
-Or use Etcher / Impression / GNOME Disks. Boot the USB and you land **directly in the calamares installer** with sideral branding — no live niri session, no `liveuser` autologin. Calamares walks you through partition + user setup; a pre-install hook reads `lspci` and bakes the matching variant (open-source GPU vs NVIDIA) into the target's `/etc/nixos/configuration.nix`. After install, reboot, log in, and niri+Noctalia comes up with the full sideral environment.
+The bootstrap detects your GPU via `lspci`, clones the flake to `/etc/nixos/sideral`, links your calamares-generated `hardware-configuration.nix` into the flake root, and runs `nixos-rebuild switch --flake /etc/nixos/sideral#<host>` with experimental-features inline. ~10-30 min on first run (lots to fetch + build). When it finishes, reboot and niri+Noctalia comes up with the full sideral environment.
 
-### Rebuild an existing NixOS install against the sideral flake
+### Rebuild an existing NixOS install (no install.sh needed)
 
-Pick the variant that matches your GPU. The ISO installer auto-detects via `lspci`; for manual rebuild you choose explicitly:
+If you already have a NixOS box and just want to apply sideral to it manually:
 
 ```bash
 # Open-source GPU stack (AMD / Intel / nouveau)
-sudo nixos-rebuild switch --upgrade --flake github:athenabriana/sideral#sideral
+sudo nixos-rebuild switch --flake github:athenabriana/sideral#sideral \
+  --extra-experimental-features 'nix-command flakes'
 
-# NVIDIA proprietary drivers (Maxwell / GTX 900-series and newer)
-sudo nixos-rebuild switch --upgrade --flake github:athenabriana/sideral#sideral-nvidia
+# NVIDIA proprietary drivers
+sudo nixos-rebuild switch --flake github:athenabriana/sideral#sideral-nvidia \
+  --extra-experimental-features 'nix-command flakes'
 ```
+
+The `--extra-experimental-features` flag is needed once; sideral's `common.nix` enables flakes permanently after the switch.
 
 After the switch the system is fully wired — niri session via greetd+regreet, Noctalia bar/launcher/lock, Zen Browser flatpak, starship prompt, mise, atuin, zoxide, gh, VS Code all on `$PATH`. The curated flatpak set is materialised declaratively by `nix-flatpak` at activation. Default shell and compositor configs are seeded by home-manager — no first-login bootstrap. Optionally bring your own dotfiles with `chezmoi init --apply <your-repo>` (see [Set up dotfiles](#set-up-dotfiles)).
 
@@ -53,7 +52,7 @@ Built directly on `nixpkgs/nixos-25.11`. Ships the [niri](https://github.com/YaL
 
 | Layer | Contents |
 | --- | --- |
-| **Base** | `nixpkgs/nixos-25.11` stable channel (open-source GPU stack from kernel: amdgpu/i915/xe/nouveau). The `sideral-nvidia` host adds the proprietary NVIDIA driver. ISO installer reads `lspci` and bakes the matching host config into the target. |
+| **Base** | `nixpkgs/nixos-25.11` stable channel (open-source GPU stack from kernel: amdgpu/i915/xe/nouveau). The `sideral-nvidia` host adds the proprietary NVIDIA driver. `install.sh` reads `lspci` and picks the matching variant. |
 | **Compositor** | [niri](https://github.com/YaLTeR/niri) — Rust-based scrollable-tiling Wayland compositor. PaperWM-style column navigation. No GNOME/Mutter. |
 | **Shell** | [Noctalia](https://github.com/noctalia-dev/noctalia-shell) — Quickshell-based bar, notification overlay, app launcher, lock screen, idle handler, control center, and wallpaper picker. Pulled from nixpkgs (`pkgs.noctalia-shell` + `pkgs.noctalia-qs`). |
 | **Greeter** | [greetd](https://sr.ht/~kennylevinsen/greetd/) + [regreet](https://github.com/rharish101/ReGreet) — Wayland-native, GTK4 GUI, runs in cage. |
@@ -103,11 +102,12 @@ For the bar / launcher / notifications: use Noctalia's built-in wallpaper picker
 
 ## Migrating from the Fedora flavor
 
-There is no in-place upgrade path from Fedora-flavor sideral (on `main`) to NixOS-flavor sideral. NixOS owns `/`, `/boot`, the bootloader entries, the package store layout, and the user activation system — none of which compose with rpm-ostree's deployment graph. To migrate:
+There is no in-place upgrade path from Fedora-flavor sideral to NixOS-flavor sideral — they own different bootloaders, root layouts, and package graphs. To migrate:
 
 1. Back up `~/` (or anything outside `~` you care about) to external storage.
-2. Flash the sideral NixOS ISO (link above) and install fresh on the same disk.
-3. Restore your data into `~/`. Re-run `chezmoi init --apply <your-repo>` if you bring your own dotfiles repo.
+2. Install vanilla NixOS fresh on the same disk (official NixOS ISO, calamares walks you through partitioning).
+3. Run the sideral bootstrap: `curl -fsSL https://raw.githubusercontent.com/athenabriana/sideral/main/install.sh | sudo bash`.
+4. Restore your data into `~/`. Re-run `chezmoi init --apply <your-repo>` if you bring your own dotfiles repo.
 
 Configurations carry over byte-identical between the two flavors — niri config, Noctalia settings, ghostty config, mise toolchain, matugen templates, kanata `.kbd` are the same files in both branches.
 
@@ -117,29 +117,24 @@ Configurations carry over byte-identical between the two flavors — niri config
 sideral/
 ├── flake.nix                          # inputs (nixpkgs, home-manager, nix-flatpak) + outputs
 ├── flake.lock                         # pinned commits for every input
-├── Justfile                           # `just build` / `just rebase` / `just build-iso`
+├── install.sh                         # bootstrap — vanilla NixOS → sideral via nixos-rebuild --flake
+├── Justfile                           # `just build` / `just rebase`
 ├── hosts/                             # per-variant entry points (thin wrappers)
 │   ├── common.nix                     # shared module-import list
 │   ├── sideral.nix                    # open-source GPU host
-│   ├── sideral-nvidia.nix             # NVIDIA host
-│   └── sideral-iso.nix                # installer-only ISO host (calamares + branding)
+│   └── sideral-nvidia.nix             # NVIDIA host
 ├── modules/                           # each capability owns one directory
-│   ├── base/          /etc/os-release identity + containers/policy.json
+│   ├── base/          /etc/os-release identity
 │   ├── cli-tools/     systemPackages: chezmoi/mise/atuin/eza/bat/rg/zoxide/yazi/tv/zellij/lazygit/gh/helix/...
 │   ├── fonts/         fonts.packages
 │   ├── services/      podman + dockerCompat + flatpak + distrobox
 │   ├── kubernetes/    kubectl + kind + helm + KIND_EXPERIMENTAL_PROVIDER env
 │   ├── niri-defaults/ niri + greetd/regreet + matugen + ghostty + kanata + IME
-│   ├── shell-ux/      /etc/zshrc + /etc/user-motd + njust wrapper + sideral.just + rclone-gdrive user unit
+│   ├── shell-ux/      njust wrapper + edit/zellij/tv configs + rclone-gdrive user unit
 │   ├── flatpaks/      11-entry curated set via nix-flatpak
 │   ├── dotfiles/      home-manager module — xdg.configFile + home.file + programs.* enables
 │   └── nvidia/        gated NVIDIA stack — videoDrivers + kargs + modprobe + env + niri drop-in
-├── iso/                               # calamares branding + wizard config + pre-install hook
-│   ├── calamares/branding/sideral/
-│   ├── calamares/modules/{partition,users,welcome,finished,shellprocess-sideral}.conf
-│   ├── calamares/settings.conf
-│   └── pre-install.sh                 # lspci → write /etc/nixos/configuration.nix on target
-└── .github/workflows/build.yml        # CI: nix flake check → build closures → build ISO → R2 upload → semantic-release
+└── .github/workflows/build.yml        # CI: nix flake check → build closures → semantic-release
 ```
 
 ## Forking this repo
@@ -150,18 +145,15 @@ Want to run your own variant?
    ```bash
    gh repo create sideral --public --source . --remote origin --push
    ```
-2. Wait ~15 min for the `build-sideral` workflow. It runs `nix flake check`, builds both `sideral` and `sideral-nvidia` system closures in parallel, runs semantic-release (which cuts a GitHub Release with changelog), builds the installer-only ISO via `nix build .#sideral-iso` (the ISO auto-detects GPU at install time and bakes the matching host into `/etc/nixos/configuration.nix` on the target), and uploads the ISO to your Cloudflare R2 bucket under a constant `sideral_x86_64.iso` key.
-3. From then on, every push to `main` cuts a new versioned release; every night the workflow re-evaluates against the latest `nixos-25.11` channel commit and republishes if anything changed.
+2. Wait ~15 min for the `build-sideral` workflow. It runs `nix flake check` and builds both `sideral` and `sideral-nvidia` system closures in parallel, then runs semantic-release on `main` to cut a GitHub Release with changelog. No artifacts are uploaded — sideral is consumed as a flake (`github:youruser/sideral#sideral`), not as a downloadable image.
+3. From then on, every push to `main` cuts a new versioned release; every night the workflow re-evaluates against the latest `nixos-25.11` channel commit.
 
 What lands in CI:
 
 | Artifact | Where | Tags |
 | --- | --- | --- |
-| System closures (validated, not pushed) | GHA cache via `magic-nix-cache-action` | per-PR / per-branch |
-| Installer ISO (latest only, single file) | Cloudflare R2 (`s3://<bucket>/sideral_x86_64.iso`) | constant key — overwrites |
+| System closures (validated, not pushed) | GHA evaluator | per-PR / per-branch |
 | Changelog + version tag | GitHub Releases | `v<semver>` |
-
-R2 secrets needed in repo settings: `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`. Update `R2_ENDPOINT`, `R2_BUCKET`, and `R2_PUBLIC_BASE` in `.github/workflows/build.yml` to match your account.
 
 ## Local build
 
@@ -170,7 +162,6 @@ just              # list recipes
 just lint         # nix flake check + alejandra format check
 just build        # nix build .#nixosConfigurations.sideral.config.system.build.toplevel
 just build-nvidia # same for the nvidia variant
-just build-iso    # nix build .#sideral-iso → result/iso/sideral_x86_64.iso
 just rebase       # sudo nixos-rebuild switch --flake .#sideral
 just rollback     # sudo nixos-rebuild switch --rollback
 ```
