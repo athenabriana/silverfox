@@ -13,14 +13,13 @@ case ":$PATH:" in
     *) export PATH="$HOME/.local/bin:$PATH" ;;
 esac
 
-# ── Default editor split ────────────────────────────────────────────────
-#   EDITOR — terminal-only fallback: Helix.
-#   VISUAL — preferred when GUI available: VS Code.
-if (( ${+commands[hx]} )); then
-    export EDITOR=hx
-fi
-if (( ${+commands[code]} )); then
-    export VISUAL=code
+# ── Default editor ──────────────────────────────────────────────────────
+# Zed is the GUI editor for both EDITOR and VISUAL. `--wait` (a.k.a. `-w`)
+# blocks the spawning process until the buffer closes, which is what git
+# commit, sudoedit, mise edit, crontab -e, less's `v` key, etc. all need.
+if (( ${+commands[zed]} )); then
+    export EDITOR='zed --wait'
+    export VISUAL='zed --wait'
 fi
 
 # ── compinit — load completion system before tool inits ────────────────
@@ -126,9 +125,9 @@ if (( ${+commands[fzf]} )); then
         [[ -z "$file" ]] && return
         local editor="${VISUAL:-${EDITOR:-}}"
         if [[ -z "$editor" ]]; then
-            if (( ${+commands[code]} )); then editor=code; else editor=vi; fi
+            if (( ${+commands[zed]} )); then editor='zed --wait'; else editor=vi; fi
         fi
-        $editor "$file"
+        eval "$editor \"\$file\""
         zle reset-prompt 2>/dev/null
     }
     zle -N _sideral_fzf_quick_open

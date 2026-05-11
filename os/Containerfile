@@ -2,7 +2,7 @@
 # ublue-os/silverblue-main. Inherits the stock GNOME desktop unchanged;
 # adds Zen Browser (preinstalled Flatpak from Flathub), a curated
 # flatpak set, ghostty terminal (Terra repo), GNU-stow-seeded user
-# dotfiles + sideral-cli-tools (mise, code, starship, carapace-bin,
+# dotfiles + sideral-cli-tools (mise, zed, starship, carapace-bin,
 # zsh, atuin, fzf, etc.), and a narrow RPM layer (rootless podman
 # with docker compatibility shims, kubernetes stack, fonts).
 #

@@ -24,18 +24,13 @@ case ":$PATH:" in
     *) export PATH="$HOME/.local/bin:$PATH" ;;
 esac
 
-# ── Default editor split ────────────────────────────────────────────────
-#   EDITOR — terminal-only fallback: Helix (modal, treesitter, LSP).
-#            Used by git commit, sudoedit, mise edit, crontab -e, less's
-#            `v` key, ssh sessions.
-#   VISUAL — preferred when a GUI is available: VS Code. Picked up by
-#            tools that check VISUAL first; falls through to $EDITOR on
-#            terminal-only sessions automatically.
-if command -v hx >/dev/null 2>&1; then
-    export EDITOR=hx
-fi
-if command -v code >/dev/null 2>&1; then
-    export VISUAL=code
+# ── Default editor ──────────────────────────────────────────────────────
+# Zed is the GUI editor for both EDITOR and VISUAL. `--wait` (a.k.a. `-w`)
+# blocks the spawning process until the buffer closes, which is what git
+# commit, sudoedit, mise edit, crontab -e, less's `v` key, etc. all need.
+if command -v zed >/dev/null 2>&1; then
+    export EDITOR='zed --wait'
+    export VISUAL='zed --wait'
 fi
 
 # ── Tool inits ──────────────────────────────────────────────────────────
@@ -89,9 +84,9 @@ if [[ $- == *i* ]] && command -v fzf >/dev/null 2>&1; then
         fi
         editor="${VISUAL:-${EDITOR:-}}"
         if [ -z "$editor" ]; then
-            if command -v code >/dev/null 2>&1; then editor=code; else editor=vi; fi
+            if command -v zed >/dev/null 2>&1; then editor='zed --wait'; else editor=vi; fi
         fi
-        $editor "$file"
+        eval "$editor \"\$file\""
     }
     bind -x '"\C-p": _sideral_fzf_quick_open'
 fi

@@ -4,21 +4,19 @@
 #
 # Tools split by source:
 #   • Fedora 44 main:         stow, atuin, fzf, bat, eza, ripgrep,
-#                             zoxide, gh, git-lfs, gcc, make, cmake,
-#                             helix, zsh
+#                             zoxide, gh, git-lfs, gcc, make, cmake, zsh
 #   • mise.jdx.dev/rpm:       mise              (repo shipped via sideral-base)
-#   • packages.microsoft.com: code              (repo shipped via sideral-base)
-#   • repo.terra.fyralabs.com: starship, ghostty (repo shipped by this package)
+#   • repo.terra.fyralabs.com: starship, ghostty, zed (repo shipped by this package)
 #   • yum.fury.io/rsteube:    carapace-bin      (repo shipped by this package)
 #
-# helix is set as $EDITOR; code is VISUAL. zsh is the default shell;
+# zed is set as both $EDITOR and $VISUAL. zsh is the default shell;
 # bash stays available via `ujust chsh bash`. Shell init files are
 # symlinked into $HOME by stow (sideral-stow-defaults) on first login.
 
 Name:           sideral-cli-tools
 Version:        %{?_sideral_version}%{!?_sideral_version:0.0.0}
 Release:        1%{?dist}
-Summary:        sideral CLI toolset (stow, starship, carapace-bin, mise, code, ghostty + Fedora RPMs)
+Summary:        sideral CLI toolset (stow, starship, carapace-bin, mise, zed, ghostty + Fedora RPMs)
 License:        MIT
 URL:            https://github.com/athenabriana/sideral
 Source0:        %{name}-%{version}.tar.gz
@@ -26,7 +24,6 @@ BuildArch:      noarch
 
 Requires:       stow
 Requires:       mise
-Requires:       code
 Requires:       starship
 Requires:       carapace-bin
 Requires:       atuin
@@ -40,23 +37,24 @@ Requires:       git-lfs
 Requires:       gcc
 Requires:       make
 Requires:       cmake
-Requires:       helix
 Requires:       zsh
 Requires:       zsh-syntax-highlighting
 Requires:       zsh-autosuggestions
 Requires:       rclone
 Requires:       fuse3
 Requires:       ghostty
+Requires:       zed
 
 %description
 Meta-package: depends on the RPM-packaged CLI tools sideral wires into
 the user shell. Shell init lives in ~/.bashrc and ~/.zshrc, symlinked
 from /usr/share/sideral/stow/ by sideral-stow-defaults on first login.
-VS Code (`code`) is the GUI editor (VISUAL); Helix (`hx`) is the default
-terminal editor (EDITOR). zsh is the default interactive shell; bash
-stays available via `ujust chsh bash`. Also ships
+Zed is the default editor for both EDITOR and VISUAL — git, sudoedit,
+mise edit, and any tool that spawns an editor opens a Zed buffer and
+blocks until it closes (`zed --wait`). zsh is the default interactive
+shell; bash stays available via `ujust chsh bash`. Also ships
 /etc/yum.repos.d/{carapace,terra}.repo so post-install `dnf upgrade`
-keeps carapace-bin + ghostty current between image rebuilds.
+keeps carapace-bin + ghostty + zed current between image rebuilds.
 
 %prep
 %setup -q
@@ -70,6 +68,15 @@ cp -a etc %{buildroot}/
 /etc/yum.repos.d/terra.repo
 
 %changelog
+* Mon May 11 2026 GitHub Actions <noreply@github.com> - 0.0.0-13
+- Swap editors: drop Requires: helix + code, add Requires: zed. Zed
+  is the GPU-accelerated GUI editor from Terra (stable channel) and
+  now serves as both $EDITOR and $VISUAL — sideral-stow-defaults'
+  bash/zsh rcs export EDITOR='zed --wait' and VISUAL='zed --wait'
+  so git commit, sudoedit, mise edit, crontab -e, less's `v` key, etc.
+  all open a Zed buffer and block until close. The terra.repo this
+  package already ships handles `dnf upgrade` continuity for zed;
+  /etc/yum.repos.d/vscode.repo retires from sideral-base in lockstep.
 * Sun May 04 2026 GitHub Actions <noreply@github.com> - 0.0.0-12
 - Restore nushell via atim/nushell COPR (not in Fedora 44 main or Terra).
   Ship /etc/yum.repos.d/nushell.repo (gpg-signed COPR) so rpm-ostree

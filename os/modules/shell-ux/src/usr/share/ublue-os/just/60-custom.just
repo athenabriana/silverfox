@@ -63,11 +63,10 @@ tools:
     B=$'\e[1m'; D=$'\e[2m'; R=$'\e[0m'
     cat <<EOF
 
-    ${B}Editor split${R} — \$EDITOR=hx, \$VISUAL=code
-      Tools that check \$VISUAL first (Ctrl+P below, some git frontends)
-      land in VS Code. Everything else (git commit, sudoedit, mise edit,
-      crontab -e, less's \`v\` key, ssh sessions) lands in Helix.
-      ${D}hx is selection-first modal — try \`hx --tutor\` if new to it.${R}
+    ${B}Editor${R} — \$EDITOR and \$VISUAL both point at \`zed --wait\`
+      git commit, sudoedit, mise edit, crontab -e, less's \`v\` key, and
+      Ctrl+P below all spawn a Zed buffer and block until it closes.
+      ${D}Zed is GUI-only — over plain SSH (no display), fall back to vi.${R}
 
     ${B}Navigation${R} — what changes from stock bash
       z <partial>     ${D}NEW.${R} zoxide jump by frecency. Replaces \`cd long/path\`

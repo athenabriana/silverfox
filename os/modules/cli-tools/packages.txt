@@ -2,16 +2,14 @@
 #
 # Sources:
 #   • Fedora 44 main:        stow, atuin, fzf, bat, eza, ripgrep,
-#                            zoxide, gh, git-lfs, gcc, make, cmake, helix,
+#                            zoxide, gh, git-lfs, gcc, make, cmake,
 #                            zsh, chromium + zsh plugins
 #   • mise.jdx.dev/rpm:      mise     (repo shipped via sideral-base)
-#   • packages.microsoft.com: code    (repo shipped via sideral-base)
-#   • repo.terra.fyralabs.com: starship, ghostty (repo shipped via sideral-cli-tools)
+#   • repo.terra.fyralabs.com: starship, ghostty, zed (repo shipped via sideral-cli-tools)
 #   • yum.fury.io/rsteube:   carapace-bin (repo shipped via sideral-cli-tools)
 
 stow
 mise
-code
 starship
 # carapace-bin — multi-shell tab-completion bridge (fury.io repo).
 # Wires up bash + zsh completions for 1000+ CLI tools.
@@ -27,10 +25,6 @@ git-lfs
 gcc
 make
 cmake
-# helix — modal terminal editor (treesitter, LSP, multi-cursor by default).
-# Set as $EDITOR by sideral-cli-init.{sh,zsh} so git, sudoedit, mise
-# edit, etc. drop into it by default.
-helix
 # zsh — default interactive shell for sideral. Switch via `ujust chsh zsh`
 # (or bash/nu for alternatives). Sideral's /etc/zshrc +
 # /etc/zsh/sideral-cli-init.zsh wire it up with all CLI tools.
@@ -63,3 +57,8 @@ chromium
 # symlinked into ~/.config/ghostty/config by sideral-stow-defaults on
 # first login.
 ghostty
+# zed — GPU-accelerated, collaborative GUI editor (Terra repo, stable
+# channel). Set as $EDITOR and $VISUAL by sideral-stow-defaults so git
+# commit, sudoedit, mise edit, etc. all open a Zed buffer and block
+# until it closes (`zed --wait`). Replaces the previous helix/code split.
+zed

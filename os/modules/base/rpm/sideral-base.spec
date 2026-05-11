@@ -1,7 +1,7 @@
 # sideral-base — meta-package + system identity + container trust policy.
 #
 # Owns:    /etc/os-release
-#          /etc/yum.repos.d/{mise,vscode}.repo
+#          /etc/yum.repos.d/mise.repo
 #          /etc/containers/policy.json  (absorbed from sideral-signing)
 # Requires: every sideral-* sub-package + transitive third-party deps
 #
@@ -39,8 +39,10 @@ Conflicts:      ublue-os-signing
 # Third-party deps (Fedora main):
 #   podman-docker  — docker → podman wrapper
 #   podman-compose — Python-based docker-compose drop-in
-# (mise + code from sideral-cli-tools; their .repo files ship from this
-# package's %files so rpm-ostree upgrade keeps pulling updates.)
+# (mise from sideral-cli-tools; its .repo file ships from this package's
+# %files so rpm-ostree upgrade keeps pulling mise updates. The previous
+# vscode.repo was retired alongside the helix/code → zed editor swap;
+# zed flows via terra.repo, shipped by sideral-cli-tools.)
 Requires:       podman-docker
 Requires:       podman-compose
 
@@ -50,12 +52,11 @@ ublue-os/silverblue-main. Installs the full sideral customization
 layer (sub-packages listed in Requires) plus rootless podman with
 docker compatibility shims.
 
-Owns: /etc/os-release (sideral identity) and /etc/yum.repos.d/
-{mise,vscode}.repo (kept enabled so rpm-ostree upgrade pulls mise and
-VS Code updates between image rebuilds). starship is not in any of
-these repos — it's baked into /usr/bin from the latest upstream binary
-at image build (see os/lib/build.sh + os/modules/cli-tools/
-starship-install.sh). Zen Browser ships as a Flathub flatpak
+Owns: /etc/os-release (sideral identity) and /etc/yum.repos.d/mise.repo
+(kept enabled so rpm-ostree upgrade pulls mise updates between image
+rebuilds). starship is not in this repo — it's baked into /usr/bin from
+the latest upstream binary at image build (see os/lib/build.sh +
+os/modules/cli-tools/starship-install.sh). Zen Browser ships as a Flathub flatpak
 (app.zen_browser.zen), preinstalled at image build alongside the
 rest of the curated flatpak set; updates flow via standard
 `flatpak update`. Remotes + manifest live in sideral-flatpaks.
@@ -70,10 +71,13 @@ cp -a etc %{buildroot}/
 %files
 /etc/os-release
 /etc/yum.repos.d/mise.repo
-/etc/yum.repos.d/vscode.repo
 /etc/containers/policy.json
 
 %changelog
+* Mon May 11 2026 GitHub Actions <noreply@github.com> - 0.0.0-13
+- Drop /etc/yum.repos.d/vscode.repo. VS Code is removed from sideral
+  in favor of Zed (Terra repo, owned by sideral-cli-tools). The
+  Microsoft yumrepo no longer has a consumer in the image.
 * Sun May 04 2026 GitHub Actions <noreply@github.com> - 0.0.0-12
 - Absorb sideral-signing: own /etc/containers/policy.json directly and
   declare Conflicts: ublue-os-signing. Eliminates the one-file signing

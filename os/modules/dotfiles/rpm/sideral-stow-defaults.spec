@@ -1,7 +1,7 @@
 # sideral-stow-defaults — image default dotfiles via GNU stow.
 #
 # Ships: /usr/share/sideral/stow/<pkg>/ source tree (one stow package
-# per concern: bash, zsh, ghostty, mise) and
+# per concern: bash, zsh, ghostty, mise, zed) and
 # /etc/profile.d/sideral-stow-defaults.sh (first-login auto-apply via
 # stow; marker-guarded so subsequent logins are instant no-ops).
 #
@@ -22,8 +22,8 @@ Requires:       stow
 %description
 Ships sideral's default dotfile seed as GNU-stow packages:
   - /usr/share/sideral/stow/<pkg>/ — one subdir per concern
-    (bash/, zsh/, ghostty/, mise/). Each holds the destination-shaped
-    layout (e.g. ghostty/.config/ghostty/config) so
+    (bash/, zsh/, ghostty/, mise/, zed/). Each holds the destination-
+    shaped layout (e.g. ghostty/.config/ghostty/config) so
     `stow --target=$HOME --dir=/usr/share/sideral/stow <pkg>` symlinks
     cleanly into $HOME.
   - /etc/profile.d/sideral-stow-defaults.sh — sources on every login
@@ -59,8 +59,18 @@ cp -a usr %{buildroot}/
 %dir /usr/share/sideral/stow/mise/.config
 %dir /usr/share/sideral/stow/mise/.config/mise
 /usr/share/sideral/stow/mise/.config/mise/config.toml
+%dir /usr/share/sideral/stow/zed
+%dir /usr/share/sideral/stow/zed/.config
+%dir /usr/share/sideral/stow/zed/.config/zed
+/usr/share/sideral/stow/zed/.config/zed/settings.json
 
 %changelog
+* Mon May 11 2026 GitHub Actions <noreply@github.com> - 0.0.0-2
+- Add `zed` stow package: ships ~/.config/zed/settings.json with
+  vim_mode enabled and Helix-style default_mode (selection-first, then
+  verb). Pairs with the helix/code → zed editor swap in sideral-cli-
+  tools 0.0.0-13. /etc/profile.d/sideral-stow-defaults.sh auto-
+  discovers the new package directory — no script change needed.
 * Sun May 10 2026 GitHub Actions <noreply@github.com> - 0.0.0-1
 - Initial. Replaces sideral-chezmoi-defaults: chezmoi swapped for GNU
   stow as the image-default dotfile seeding tool. Source tree

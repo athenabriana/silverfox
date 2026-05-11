@@ -59,12 +59,12 @@ Built directly on `ghcr.io/ublue-os/silverblue-main:44`. Inherits the stock GNOM
 | **Desktop** | Stock GNOME inherited from silverblue-main (Mutter + GDM + GNOME Shell). No custom compositor, shell, or greeter. |
 | **Terminal** | [ghostty](https://ghostty.org) via Terra repo. Per-user config symlinked into `$HOME` by stow on first login. |
 | **Browser** | [Zen Browser](https://zen-browser.app) (`app.zen_browser.zen` from Flathub). Preinstalled at image build. |
-| **Editor** | `code` (VS Code) via Microsoft RPM repo. `hx` (Helix) from `sideral-cli-tools`. |
+| **Editor** | `zed` (Zed) via Terra repo. Set as both `$EDITOR` and `$VISUAL` (`zed --wait`) so git commit, sudoedit, mise edit, etc. all open a Zed buffer and block until close. |
 | **Containers** | Rootless podman + podman-docker shim + podman-compose. `docker` CLI resolves to podman. No daemon. |
-| **CLI toolset** | `sideral-cli-tools` meta-RPM: `stow`, `mise`, `code`, `starship`, `carapace-bin`, `atuin`, `fzf`, `bat`, `eza`, `ripgrep`, `zoxide`, `gh`, `git-lfs`, `gcc`, `make`, `cmake`, `helix`, `zsh` (+ syntax-highlighting + autosuggestions), `rclone`, `fuse3`, `ghostty`. |
+| **CLI toolset** | `sideral-cli-tools` meta-RPM: `stow`, `mise`, `zed`, `starship`, `carapace-bin`, `atuin`, `fzf`, `bat`, `eza`, `ripgrep`, `zoxide`, `gh`, `git-lfs`, `gcc`, `make`, `cmake`, `zsh` (+ syntax-highlighting + autosuggestions), `rclone`, `fuse3`, `ghostty`. |
 | **Shell-init wiring** | `~/.bashrc` + `~/.zshrc` (stow-symlinked from `/usr/share/sideral/stow/`) wire starship + atuin + zoxide + mise + fzf + carapace, plus Ctrl+P/Alt+S/Ctrl+G keybindings, eza/bat aliases, AI-agent guard. `command -v`-guarded throughout. |
 | **Fonts** | Cascadia Code, JetBrains Mono, Adwaita, OpenDyslexic (Fedora main) + Source Serif 4, Source Sans 3 (Adobe GitHub). |
-| **User dotfiles** | Image defaults (ghostty, bash/zsh, mise) symlinked into `$HOME` by GNU stow on first login. To customize a single file, replace its symlink with a real copy and edit. |
+| **User dotfiles** | Image defaults (ghostty, bash/zsh, mise, zed) symlinked into `$HOME` by GNU stow on first login. The zed package enables vim mode with `default_mode: helix_normal` for selection-first modal editing. To customize a single file, replace its symlink with a real copy and edit. |
 | **Flatpaks (preinstalled)** | Zen Browser, Bazaar, Flatseal, Extension Manager, Podman Desktop, DistroShelf, Resources, Smile, Web App Hub, Pika Backup, Junction (all from Flathub). Single curated remote: `flathub`. |
 
 ## Repo layout
@@ -78,9 +78,9 @@ sideral/
 │   │   ├── build.sh                 # orchestrator: per-module *.sh + initramfs regen
 │   │   └── build-rpms.sh            # inline rpmbuild: walks os/modules/*/rpm/*.spec
 │   ├── modules/                     # each capability owns one directory
-│   │   ├── base/         /etc/os-release + yum.repos.d/{mise,vscode}.repo + policy.json  rpm/sideral-base.spec
-│   │   ├── cli-tools/    packages.txt (CLI tools + ghostty) + Terra/carapace repos  rpm/sideral-cli-tools.spec
-│   │   ├── dotfiles/     stow source tree (bash, zsh, ghostty, mise)  rpm/sideral-stow-defaults.spec
+│   │   ├── base/         /etc/os-release + yum.repos.d/mise.repo + policy.json  rpm/sideral-base.spec
+│   │   ├── cli-tools/    packages.txt (CLI tools + ghostty + zed) + Terra/carapace repos  rpm/sideral-cli-tools.spec
+│   │   ├── dotfiles/     stow source tree (bash, zsh, ghostty, mise, zed)  rpm/sideral-stow-defaults.spec
 │   │   ├── shell-ux/     ujust 60-custom.just + user-motd + rclone-gdrive.service  rpm/sideral-shell-ux.spec
 │   │   ├── services/     podman/distrobox configs  rpm/sideral-services.spec
 │   │   ├── kubernetes/   kubectl repo + KIND env + kind/helm install  rpm/sideral-kubernetes.spec
@@ -164,14 +164,13 @@ If your personal repo packages something the sideral seed already symlinked, sto
 
 ## CLI toolset — sideral-cli-tools
 
-The `sideral-cli-tools` meta-RPM declares `Requires:` on the CLI tools + VS Code + ghostty:
+The `sideral-cli-tools` meta-RPM declares `Requires:` on the CLI tools + zed + ghostty:
 
 | Tool | Source |
 | --- | --- |
-| `stow`, `atuin`, `fzf`, `bat`, `eza`, `ripgrep`, `zoxide`, `gh`, `git-lfs`, `gcc`, `make`, `cmake`, `helix`, `zsh`, `zsh-syntax-highlighting`, `zsh-autosuggestions`, `rclone`, `fuse3` | Fedora 44 main |
+| `stow`, `atuin`, `fzf`, `bat`, `eza`, `ripgrep`, `zoxide`, `gh`, `git-lfs`, `gcc`, `make`, `cmake`, `zsh`, `zsh-syntax-highlighting`, `zsh-autosuggestions`, `rclone`, `fuse3` | Fedora 44 main |
 | `mise` | mise.jdx.dev/rpm (persistent repo, `rpm-ostree upgrade` pulls updates) |
-| `code` (VS Code) | packages.microsoft.com (persistent repo) |
-| `starship`, `ghostty` | Terra (`repos.fyralabs.com/terra44`, persistent repo) |
+| `starship`, `ghostty`, `zed` | Terra (`repos.fyralabs.com/terra44`, persistent repo) |
 | `carapace-bin` | yum.fury.io/rsteube (persistent repo) |
 
 All present after `rpm-ostree rebase`. To opt out (slimmer derivative): `sudo rpm-ostree override remove sideral-cli-tools`. Individual tools can also be removed: `sudo rpm-ostree override remove zoxide`. The image-default `~/.bashrc` and `~/.zshrc` `command -v`-guard each integration so removing any single tool is safe.
