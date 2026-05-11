@@ -22,8 +22,34 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  fox-preflight:
+    # Lints the bash dispatcher / libexec scripts and runs the bash
+    # integration suites before the heavy image-build matrix kicks off.
+    # Bash + shellcheck + util-linux (script(1) for PTY tests) only —
+    # no language toolchain bootstrap. Fails fast (<2min) when a fox
+    # script regresses, saving ~12min × 2 variants of image build time.
+    name: fox lint + integration tests
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install just + shellcheck + util-linux
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+              just shellcheck util-linux
+
+      - name: just fox-lint
+        run: just fox-lint
+
+      - name: just fox-test
+        run: just fox-test
+
   build:
     name: Build container image (${{ matrix.variant }})
+    needs: fox-preflight
     runs-on: ubuntu-24.04
     permissions:
       contents: read

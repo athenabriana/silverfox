@@ -17,9 +17,32 @@ build:
         --file os/Containerfile \
         os
 
-# Shellcheck every build script
-lint:
+# Shellcheck every build script (chains fox-lint after the OS lib/modules sweep)
+lint: fox-lint
     shellcheck os/lib/*.sh os/modules/*/*.sh
+
+# Shellcheck + bash syntax for fox dispatcher / libexec / tests
+fox-lint:
+    bash -n os/modules/fox/src/bin/fox
+    bash -n os/modules/fox/src/libexec/home-factory-reset.sh
+    bash -n os/modules/fox/src/libexec/chsh.sh
+    shellcheck -x \
+        os/modules/fox/src/bin/fox \
+        os/modules/fox/src/libexec/home-factory-reset.sh \
+        os/modules/fox/src/libexec/chsh.sh \
+        os/modules/fox/src/tests/lib.sh \
+        os/modules/fox/src/tests/fox.test.sh \
+        os/modules/fox/src/tests/factory-reset.test.sh
+
+# Run fox integration tests (dispatcher + factory-reset)
+fox-test:
+    bash os/modules/fox/src/tests/fox.test.sh
+    bash os/modules/fox/src/tests/factory-reset.test.sh
+
+# Render sideral(7) locally for preview (requires pandoc on $PATH)
+fox-gen-man:
+    pandoc -s -t man os/modules/fox/src/man/sideral.md -o /tmp/sideral.7
+    @echo "Preview: man -l /tmp/sideral.7"
 
 # Rebase host to the locally-built image (requires reboot after)
 rebase:

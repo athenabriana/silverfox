@@ -1,7 +1,7 @@
 <h1 align="center">sideral</h1>
 
 <p align="center">
-  <em>Personal Fedora atomic desktop — stock GNOME on uBlue silverblue-main, ghostty terminal, Zen Browser, GNU-stow-driven dotfiles, mise toolchain.</em>
+  <em>Personal Fedora atomic desktop — stock GNOME on uBlue silverblue-main, ghostty terminal, Zen Browser, /etc/skel-seeded user dotfiles, mise toolchain, `fox` operator CLI.</em>
 </p>
 
 <p align="center">
@@ -45,11 +45,11 @@ sudo rpm-ostree rebase ostree-unverified-registry:ghcr.io/athenabriana/sideral-n
 systemctl reboot
 ```
 
-After reboot the image is fully wired — stock GNOME session via GDM, ghostty terminal, Zen Browser, starship prompt, mise, atuin, zoxide, fzf, gh, VS Code all on `$PATH`. The curated flatpak set is preinstalled at image build. Default shell configs are symlinked into `$HOME` by GNU stow on first login. Layer your own dotfiles on top with stow against your personal repo (see [Set up dotfiles](#set-up-dotfiles)).
+After reboot the image is fully wired — stock GNOME session via GDM, ghostty terminal, Zen Browser, starship prompt, mise, atuin, zoxide, fzf, gh, and zed all on `$PATH`. The curated flatpak set is preinstalled at image build. Image-default user dotfiles ship via `/etc/skel`; `useradd` copies them into new user homes once, after which they're user-domain real files (see [Set up dotfiles](#set-up-dotfiles)). Run `fox` (or `man sideral`) for the operator-CLI cheatsheet.
 
 ---
 
-Built directly on `ghcr.io/ublue-os/silverblue-main:44`. Inherits the stock GNOME desktop unchanged; adds ghostty terminal (Terra), a `sideral-cli-tools` meta-RPM with day-to-day CLI tools + VS Code, Zen Browser (Flathub), rootless podman with docker compatibility shims, and a curated flatpak set. Image-default dotfiles are seeded by [GNU stow](https://www.gnu.org/software/stow/) on first login.
+Built directly on `ghcr.io/ublue-os/silverblue-main:44`. Inherits the stock GNOME desktop unchanged; adds ghostty terminal (Terra), a `sideral-cli-tools` meta-RPM with day-to-day CLI tools + zed, Zen Browser (Flathub), rootless podman with docker compatibility shims, and a curated flatpak set. Image-default user dotfiles ship as a stow source tree under `/etc/skel/.config/sideral/stow/` with pre-farmed symlinks at `/etc/skel/{.bashrc,.zshrc,…}` — `useradd` seeds them once, sideral never touches them again.
 
 ## What's in the image
 
@@ -61,10 +61,11 @@ Built directly on `ghcr.io/ublue-os/silverblue-main:44`. Inherits the stock GNOM
 | **Browser** | [Zen Browser](https://zen-browser.app) (`app.zen_browser.zen` from Flathub). Preinstalled at image build. |
 | **Editor** | `zed` (Zed) via Terra repo. Set as both `$EDITOR` and `$VISUAL` (`zed --wait`) so git commit, sudoedit, mise edit, etc. all open a Zed buffer and block until close. |
 | **Containers** | Rootless podman + podman-docker shim + podman-compose. `docker` CLI resolves to podman. No daemon. |
-| **CLI toolset** | `sideral-cli-tools` meta-RPM: `stow`, `mise`, `zed`, `starship`, `carapace-bin`, `atuin`, `fzf`, `bat`, `eza`, `ripgrep`, `zoxide`, `gh`, `git-lfs`, `gcc`, `make`, `cmake`, `zsh` (+ syntax-highlighting + autosuggestions), `rclone`, `fuse3`, `ghostty`. |
-| **Shell-init wiring** | `~/.bashrc` + `~/.zshrc` (stow-symlinked from `/usr/share/sideral/stow/`) wire starship + atuin + zoxide + mise + fzf + carapace, plus Ctrl+P/Alt+S/Ctrl+G keybindings, eza/bat aliases, AI-agent guard. `command -v`-guarded throughout. |
+| **Operator CLI** | `fox` — `~20`-line bash dispatcher at `/usr/bin/fox` routing into `/usr/share/sideral/sideral.justfile` via `just`. Verbs: `chsh`, `cheatsheet`, `home factory-reset`, `update`, `upgrade`, `rollback`, `status`, `cleanup`, `changelog`. Cheatsheet at `man 7 sideral` (alias: `fox cheatsheet`). Ships via the `sideral-fox` RPM. |
+| **CLI toolset** | `sideral-cli-tools` meta-RPM: `stow`, `mise`, `zed`, `starship`, `carapace-bin`, `atuin`, `fzf`, `bat`, `eza`, `ripgrep`, `zoxide`, `gh`, `git-lfs`, `gcc`, `make`, `cmake`, `zsh` (+ syntax-highlighting + autosuggestions), `ghostty`. `just` lands alongside via the cli-tools layer (it's a Requires of `sideral-fox`). |
+| **Shell-init wiring** | `~/.bashrc` + `~/.zshrc` (real files seeded from `/etc/skel/.config/sideral/stow/{bash,zsh}/` by `useradd`) wire starship + atuin + zoxide + mise + fzf + carapace, plus Ctrl+P/Alt+S/Ctrl+G keybindings, eza/bat aliases, AI-agent guard. `command -v`-guarded throughout. |
 | **Fonts** | Cascadia Code, JetBrains Mono, Adwaita, OpenDyslexic (Fedora main) + Source Serif 4, Source Sans 3 (Adobe GitHub). |
-| **User dotfiles** | Image defaults (ghostty, bash/zsh, mise, zed) symlinked into `$HOME` by GNU stow on first login. The zed package enables vim mode with `default_mode: helix_normal` for selection-first modal editing. To customize a single file, replace its symlink with a real copy and edit. |
+| **User dotfiles** | Image defaults (bash, zsh, mise, ghostty, zed) seeded once into `$HOME` by `useradd` from `/etc/skel/.config/sideral/stow/`. Five pre-farmed symlinks at `/etc/skel/{.bashrc,.zshrc,.config/{mise/config.toml,ghostty/config,zed/settings.json}}` resolve into the stow tree at seed time. Dotfiles become user-domain from then on — sideral never modifies them. To revert to image defaults: `fox home factory-reset`. The zed package enables vim mode with `default_mode: helix_normal` for selection-first modal editing. |
 | **Flatpaks (preinstalled)** | Zen Browser, Bazaar, Flatseal, Extension Manager, Podman Desktop, DistroShelf, Resources, Smile, Web App Hub, Pika Backup, Junction (all from Flathub). Single curated remote: `flathub`. |
 
 ## Repo layout
@@ -79,9 +80,10 @@ sideral/
 │   │   └── build-rpms.sh            # inline rpmbuild: walks os/modules/*/rpm/*.spec
 │   ├── modules/                     # each capability owns one directory
 │   │   ├── base/         /etc/os-release + yum.repos.d/mise.repo + policy.json  rpm/sideral-base.spec
-│   │   ├── cli-tools/    packages.txt (CLI tools + ghostty + zed) + Terra/carapace repos  rpm/sideral-cli-tools.spec
-│   │   ├── dotfiles/     stow source tree (bash, zsh, ghostty, mise, zed)  rpm/sideral-stow-defaults.spec
-│   │   ├── shell-ux/     ujust 60-custom.just + user-motd + rclone-gdrive.service  rpm/sideral-shell-ux.spec
+│   │   ├── cli-tools/    packages.txt (CLI tools + ghostty + zed + just) + Terra/carapace repos  rpm/sideral-cli-tools.spec
+│   │   ├── fox/          bash dispatcher + Justfiles + libexec + manpage source + tests  rpm/sideral-fox.spec
+│   │   ├── home/         /etc/skel stow tree + pre-farmed symlinks  rpm/sideral-home.spec
+│   │   ├── shell-ux/     /etc/user-motd + /etc/mise/config.toml + login-shell migrate  rpm/sideral-shell-ux.spec
 │   │   ├── services/     podman/distrobox configs  rpm/sideral-services.spec
 │   │   ├── kubernetes/   kubectl repo + KIND env + kind/helm install  rpm/sideral-kubernetes.spec
 │   │   └── flatpaks/     remotes + curated manifest + purge list  rpm/sideral-flatpaks.spec
@@ -125,42 +127,38 @@ just rollback   # back to the previous deployment
 
 ## Set up dotfiles
 
-sideral ships a default dotfile set at `/usr/share/sideral/stow/<pkg>/` — one stow package per concern (`bash`, `zsh`, `ghostty`, `mise`), each holding a destination-shaped layout (e.g. `ghostty/.config/ghostty/config`). On first login, `/etc/profile.d/sideral-stow-defaults.sh` runs `stow --restow --no-folding` over every package, so `~/.bashrc`, `~/.zshrc`, `~/.config/ghostty/config`, and `~/.config/mise/config.toml` become symlinks into the read-only ostree source.
+sideral ships image-default user dotfiles via `/etc/skel` — five stow packages at `/etc/skel/.config/sideral/stow/{bash,zsh,mise,ghostty,zed}/`, plus pre-farmed relative symlinks at `/etc/skel/{.bashrc,.zshrc,.config/mise/config.toml,.config/ghostty/config,.config/zed/settings.json}` pointing into the stow tree. On `useradd`, `cp -a` semantics copy the whole tree (symlinks preserved) into the new user's home. From that moment forward the dotfiles are **user-domain real files** — sideral never modifies them.
 
-After `rpm-ostree upgrade` (e.g. when a new file lands in the seed), re-apply with:
+Existing users on an upgrade don't automatically pick up new defaults: image upgrades that change `/etc/skel` only affect future-created users. To opt in destructively:
 
 ```bash
-ujust apply-defaults
+fox home factory-reset           # prompts; --yes to skip the prompt
 ```
 
-That re-stows every package, picking up new files; existing symlinks stay; if you replaced a symlink with a real file, stow refuses to overwrite it.
+This wipes the sideral-managed subtree of `$HOME` (depth-≤2 under `/etc/skel`) and reseeds from the current image. Non-sideral subdirectories of `~/.config/` (e.g. `firefox/`, `Code/`) are preserved. See `man 7 sideral` for the full scope.
 
 ### Customize a single file
 
-Because the file in `$HOME` is a symlink to a read-only ostree path, you can't edit in place. To customize:
+Edit it in place. Real file, real edit:
 
 ```bash
-# 1. break the symlink and copy out
-file=~/.bashrc
-cp -L "$file" /tmp/copy && rm "$file" && mv /tmp/copy "$file"
-# 2. edit your copy
-$EDITOR "$file"
-# 3. on next `ujust apply-defaults`, stow leaves your real file alone
+$EDITOR ~/.bashrc
 ```
 
-To restore the sideral default later, delete your copy and run `ujust apply-defaults`.
+The `.bashrc` symlink shipped by `/etc/skel` was resolved into a real file at `useradd` time only on the symlink-target side — the symlink itself still points into `~/.config/sideral/stow/bash/.bashrc`, which is also a real file. Edit either path; same file. To restore the sideral default: `fox home factory-reset` (destructive — overwrites everything in scope, including unrelated edits).
+
+For finer rollback, `git init` in `~/.config/sideral/` and use `git checkout <path>` to restore individual files from a previous commit.
 
 ### Bring your own dotfiles
 
-For a personal dotfile repo on top of (or instead of) the sideral seed, the simplest stow-native flow is to use stow itself against your repo:
+Custom stow packages must live **outside** the sideral-managed subtree — `~/.config/sideral/`, `~/.config/mise/`, `~/.config/ghostty/`, and `~/.config/zed/` are all wiped by `fox home factory-reset`. Recommended layout:
 
 ```bash
-git clone https://github.com/<you>/dotfiles ~/dotfiles
-cd ~/dotfiles
-stow --target="$HOME" --no-folding <package>
+git clone https://github.com/<you>/dotfiles ~/.config/dotfiles
+stow --target="$HOME" --dir="$HOME/.config/dotfiles" <package>
 ```
 
-If your personal repo packages something the sideral seed already symlinked, stow refuses with a conflict — `unstow` the sideral package first or delete the conflicting symlink, then re-stow your own. There is no automatic conflict resolution between the two sources.
+Files outside the four sideral trees survive `fox home factory-reset` unchanged.
 
 ## CLI toolset — sideral-cli-tools
 
@@ -168,30 +166,30 @@ The `sideral-cli-tools` meta-RPM declares `Requires:` on the CLI tools + zed + g
 
 | Tool | Source |
 | --- | --- |
-| `stow`, `atuin`, `fzf`, `bat`, `eza`, `ripgrep`, `zoxide`, `gh`, `git-lfs`, `gcc`, `make`, `cmake`, `zsh`, `zsh-syntax-highlighting`, `zsh-autosuggestions`, `rclone`, `fuse3` | Fedora 44 main |
+| `stow`, `atuin`, `fzf`, `bat`, `eza`, `ripgrep`, `zoxide`, `gh`, `git-lfs`, `gcc`, `make`, `cmake`, `zsh`, `zsh-syntax-highlighting`, `zsh-autosuggestions`, `just` | Fedora 44 main |
 | `mise` | mise.jdx.dev/rpm (persistent repo, `rpm-ostree upgrade` pulls updates) |
 | `starship`, `ghostty`, `zed` | Terra (`repos.fyralabs.com/terra44`, persistent repo) |
 | `carapace-bin` | yum.fury.io/rsteube (persistent repo) |
 
 All present after `rpm-ostree rebase`. To opt out (slimmer derivative): `sudo rpm-ostree override remove sideral-cli-tools`. Individual tools can also be removed: `sudo rpm-ostree override remove zoxide`. The image-default `~/.bashrc` and `~/.zshrc` `command -v`-guard each integration so removing any single tool is safe.
 
-mise toolchains (node, bun, python, go, etc.) are *user-level* — declare them in your stowed `~/.config/mise/config.toml`. sideral doesn't ship a default toolchain; pick what you use.
+mise toolchains (node, bun, python, go, etc.) are *user-level* — pre-seeded into `~/.config/mise/config.toml` via `/etc/skel` (9 toolchains: node, bun, pnpm, python, uv, go, rust, zig, act). Edit the real file in your home directory to customize; sideral never reaches in.
 
 ## Iterating on dotfiles
 
 Layer choice:
 
 - **System-wide** (repo files, systemd units, os-release, packages) → `os/modules/<capability>/src/` or `os/modules/<capability>/packages.txt`. Rebuild image + rebase.
-- **User-level** (shell, prompt, git, mise toolchains, per-program configs) → break the stow symlink (see "Customize a single file" above) and edit. For a personal git-tracked layer, stow your own packages on top.
+- **User-level** (shell, prompt, git, mise toolchains, per-program configs) → edit the real file under `~/.config/sideral/stow/` (or top-level `~/.bashrc` / `~/.zshrc`). To revert to image defaults: `fox home factory-reset` (destructive — see above). For a personal git-tracked layer, stow your own packages out of `~/.config/dotfiles/` per the "Bring your own dotfiles" section.
 
 ## Why not nix?
 
-sideral *did* have a nix + home-manager user layer in flight — see `.specs/features/nix-home/spec.md`. It was implemented locally then retired before VM verification on 2026-05-01. Three documented frictions specifically affect Fedora atomic 42+: composefs vs the nix-installer ostree planner ([nix-installer#1445](https://github.com/DeterminateSystems/nix-installer/issues/1445)), SELinux mislabel of `/nix` store paths ([#1383](https://github.com/DeterminateSystems/nix-installer/issues/1383), open since 2023), and `/nix` + nix-daemon disappearing after `rpm-ostree upgrade` on F42+ (Universal Blue forum reports). The stow seed gets you image-default dotfiles without any of those failure modes — and without depending on chezmoi as an intermediary. See `.specs/features/chezmoi-home/context.md` D-01 for the historical nix-vs-chezmoi rationale.
+sideral *did* have a nix + home-manager user layer in flight — see `.specs/features/nix-home/spec.md`. It was implemented locally then retired before VM verification on 2026-05-01. Three documented frictions specifically affect Fedora atomic 42+: composefs vs the nix-installer ostree planner ([nix-installer#1445](https://github.com/DeterminateSystems/nix-installer/issues/1445)), SELinux mislabel of `/nix` store paths ([#1383](https://github.com/DeterminateSystems/nix-installer/issues/1383), open since 2023), and `/nix` + nix-daemon disappearing after `rpm-ostree upgrade` on F42+ (Universal Blue forum reports). The `/etc/skel` seed + `fox home factory-reset` model recovers the home-manager UX (declare → revert) without any of those failure modes — and v2's `fox home sync` (queued) will bring declarative manifests for flatpaks/dconf/systemd-user back without the nix substrate. See `.specs/features/chezmoi-home/context.md` D-01 for the historical nix-vs-chezmoi rationale, and `.specs/features/fox/context.md` D-16/D-17 for the home-manager-without-nix design.
 
 ## Rollback
 
 If a rebase breaks: reboot, pick the previous deployment at GRUB, or:
 ```bash
-rpm-ostree rollback
+fox rollback                    # alias for: rpm-ostree rollback
 systemctl reboot
 ```

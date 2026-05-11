@@ -34,6 +34,21 @@
 
 ARG BASE_IMAGE="ghcr.io/ublue-os/silverblue-main:44"
 
+# ── Stage 0: man-build ──────────────────────────────────────────────────
+# Render the sideral(7) manpage from pandoc Markdown. A tiny stage
+# (fedora-minimal + pandoc + gzip, ~150MB transient) so the pandoc
+# toolchain never lands in the final image. The output is consumed by
+# the Layer-2 RUN below via COPY --from=man-build.
+#
+# `mkdir -p /out` is required — pandoc does not create its output dir.
+FROM registry.fedoraproject.org/fedora-minimal:44 AS man-build
+RUN microdnf install -y --setopt=install_weak_deps=0 pandoc gzip && \
+    microdnf clean all && \
+    mkdir -p /out
+COPY modules/fox/src/man/sideral.md /workspace/sideral.md
+RUN pandoc -s -t man /workspace/sideral.md -o /out/sideral.7 && \
+    gzip -9 /out/sideral.7
+
 # ── Stage 1a: stable context ────────────────────────────────────────────
 # Only content that changes rarely: packages.txt + repo files + the
 # install-packages.sh orchestrator. BuildKit keys the package-install
@@ -96,6 +111,15 @@ RUN --mount=type=bind,from=ctx-packages,source=/,target=/ctx \
 # auto-remove ~73 transitively-pulled packages, several of which are
 # part of the silverblue base. rpm -e removes only the two packages we
 # asked for; the orphaned deps stay put.
+# sideral-fox bridge: the manpage comes from the `man-build` stage; the
+# bash dispatcher + Justfiles + libexec scripts come directly from the
+# build context. Both land in /var/tmp/fox-prebuilt/ which sideral-fox.spec's
+# %install reads from, then the same RUN cleans the bridge dir up.
+COPY --from=man-build /out/sideral.7.gz                /var/tmp/fox-prebuilt/sideral.7.gz
+COPY modules/fox/src/bin                               /var/tmp/fox-prebuilt/bin
+COPY modules/fox/src/recipes                           /var/tmp/fox-prebuilt/recipes
+COPY modules/fox/src/libexec                           /var/tmp/fox-prebuilt/libexec
+
 RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=cache,dst=/var/cache \
     --mount=type=cache,dst=/var/log \
@@ -106,7 +130,7 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     rpm -e --nodeps ublue-os-signing && \
     rpm -Uvh --replacefiles --replacepkgs /tmp/rpmbuild/RPMS/noarch/sideral-*.rpm && \
     rpm -e rpm-build rpmdevtools && \
-    rm -rf /tmp/rpmbuild && \
+    rm -rf /tmp/rpmbuild /var/tmp/fox-prebuilt && \
     ostree container commit
 
 # Final bootc sanity check.

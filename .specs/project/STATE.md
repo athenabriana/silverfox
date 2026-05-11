@@ -3,8 +3,7 @@
 Persistent memory: decisions, blockers, lessons, todos, deferred ideas.
 
 ## Current focus
-- **No feature in flight.** `chezmoi-home` (the most recently-spec'd feature) effectively shipped on 2026-05-02 — every commit since the 2026-05-01 source-tree landing has gone through the `build-sideral` CI workflow (matrix amd64 × {open, nvidia}, ending in `bootc container lint`), and the major post-spec changes (module refactor, docker→podman, NVIDIA variant, kubernetes module, flatpak grow-out) all required `just build`-equivalent CI passes to merge. T15's "needs a host with podman + shellcheck" gate is met by CI itself.
-- No next candidate queued.
+- **`fox` in flight (2026-05-11).** Sideral-owned operator CLI replacing `ujust`, paired with a `/etc/skel`-seeded user-domain dotfile model and the retirement of `sideral-stow-defaults` + the gdrive integration. Two new modules (`fox/`, `home/`), one narrowed (`shell-ux/`), one retired (`dotfiles/`). 47 testable requirements, 18 locked decisions. Spec at `.specs/features/fox/`. Task list at `.specs/features/fox/tasks.md` — Phase 1–4 source changes landed; Phase 5 (docs) and Phase 6 (full `just build` + bootc lint + VM rebase) pending.
 
 ## Past features (shipped)
 
@@ -27,10 +26,10 @@ Persistent memory: decisions, blockers, lessons, todos, deferred ideas.
 
 ## Locked decisions
 
-### Source tree layout (2026-05-02 — module refactor, commit `9aef370`)
-- **`os/lib/{build,build-rpms}.sh`** — orchestrator + inline-RPM driver. Replaces `os/build.sh` + `os/build-rpms.sh`.
-- **`os/modules/<capability>/`** — every capability owns one dir holding its `packages.txt`, `*.sh` scripts, and `rpm/<spec>` + `src/` tree. Replaces the previous `os/build_files/features/` + `os/packages/sideral-*/` split.
-- Module list: `containers desktop flatpaks fonts kubernetes meta nvidia shell-init shell-tools signing`.
+### Source tree layout (2026-05-11 — fox feature, module count 7 → 8)
+- **`os/lib/{build,build-rpms}.sh`** — orchestrator + inline-RPM driver. Unchanged across the fox feature.
+- **`os/modules/<capability>/`** — current 8 modules: `base, cli-tools, flatpaks, fox, home, kubernetes, services, shell-ux`. Changed in the fox feature: `+fox`, `+home`, `-dotfiles`; `shell-ux` narrowed to system-level shell concerns (`/etc/user-motd`, `/etc/mise/config.toml`, `/etc/profile.d/sideral-shell-migrate.sh`); `cli-tools` dropped `rclone`+`fuse3` and added `just` (as a Layer-1 dep for `sideral-fox` Requires).
+- Module list (pre-fox, 2026-05-02): `containers desktop flatpaks fonts kubernetes meta nvidia shell-init shell-tools signing`.
 - Build order in `os/lib/build.sh`: `shell-tools desktop containers kubernetes fonts flatpaks nvidia` — shell-tools first because `sideral-cli-tools.spec` Requires every binary it installs; nvidia last so variant tweaks land on the final tree.
 - Modules without `packages.txt` or `*.sh` are silently skipped by the orchestrator (signing, shell-init, meta) — they only contribute via the inline RPM build.
 - Sub-package names kept stable across the refactor for upgrade safety (`sideral-base`, `sideral-services`, `sideral-shell-ux`, etc.); the **module dir** name is the descriptive one.
@@ -48,8 +47,8 @@ Persistent memory: decisions, blockers, lessons, todos, deferred ideas.
 - **Chromium installed but hidden** via `NoDisplay=true` patched into `/usr/share/applications/chromium*.desktop` by `os/modules/shell-tools/hide-chromium.sh`. For headless automation (puppeteer/playwright), web-app debugging, fallback rendering. Invokable as `chromium-browser`.
 
 ### Editor
-- **Editor split** (2026-05-02): `EDITOR=hx`, `VISUAL=code`. Helix is modal-default for terminal contexts (git commit, sudoedit, mise edit, less's `v`, ssh sessions); VS Code wins where `$VISUAL` is checked first (Ctrl+P quick-open, some git frontends).
-- VS Code via Microsoft RPM repo at `packages.microsoft.com/yumrepos/vscode` (sideral-base ships `/etc/yum.repos.d/vscode.repo`). Extensions install from the marketplace on first launch (Remote-SSH + Remote-Containers expected).
+- **Editor** (2026-05-11): zed unified — `EDITOR='zed --wait'` and `VISUAL='zed --wait'`. Vim mode with `default_mode: helix_normal` for selection-first modal editing. Replaces the prior hx/code split (helix + VS Code both dropped); vscode.repo no longer ships in sideral-base.
+- Zed comes from Terra (`repos.fyralabs.com/terra44`, persistent repo shipped via sideral-cli-tools); `rpm-ostree upgrade` keeps it current between image rebuilds.
 
 ### Container runtime (2026-05-02)
 - **Rootless podman + docker compatibility shims.** Layered RPMs: `podman-docker` (installs `/usr/bin/docker` wrapper + `/etc/profile.d/podman-docker.sh` setting `DOCKER_HOST=unix:///run/user/$UID/podman/podman.sock`) and `podman-compose` (Python compose v2 ~95% parity).
@@ -75,32 +74,34 @@ Persistent memory: decisions, blockers, lessons, todos, deferred ideas.
 - **mise** via persistent `mise.jdx.dev/rpm/` repo; **VS Code** via persistent `packages.microsoft.com/yumrepos/vscode` repo; both shipped as `/etc/yum.repos.d/{mise,vscode}.repo` files in `sideral-base` so `rpm-ostree upgrade` keeps pulling updates between rebuilds.
 - `/etc/mise/config.toml` ships settings only (`trusted_config_paths`, `not_found_auto_install`, `jobs`, etc.). Tools live in `~/.config/mise/config.toml` (seeded by `sideral-shell-seed.service` with the full default toolchain; chezmoi-trackable). User-level config merges with system config additively.
 
-### Shells (2026-05-02)
-- **Three parallel shells**: bash (default), fish, zsh. Sideral ships parallel init for all three:
-  - `/etc/profile.d/sideral-cli-init.sh` (bash)
-  - `/etc/fish/conf.d/sideral-cli-init.fish` (fish)
-  - `/etc/zsh/sideral-cli-init.zsh` + custom `/etc/zshrc` (zsh; replaces Fedora's stock 3-line zshrc via `rpm -Uvh --replacefiles`)
-- All three wire the same set: starship, atuin, zoxide, mise, fzf, EDITOR=hx + VISUAL=code, eza/bat aliases (skipped for AI agents), Ctrl+P fzf quick-open, Alt+S sudo toggle, Ctrl+G fzf git-branch checkout.
+### Shells (2026-05-11 — two shells, /etc/skel seeded)
+- **Two shells**: bash (default) and zsh. fish dropped entirely (not in cli-tools, not in `fox chsh` allowlist, not in `/etc/skel`). nu was already gone (2026-05-10 dotfile-seeding rework).
+- **User-domain rcs**: `~/.bashrc` and `~/.zshrc` are real files seeded once into new user homes by `useradd` from `/etc/skel/.config/sideral/stow/{bash,zsh}/` (via the pre-farmed top-level symlinks in `/etc/skel/`). Owned by `sideral-home`. Sideral never modifies them after seed. Existing users opt in to new defaults via `fox home factory-reset`.
+- Both rcs wire the same set: starship, atuin, zoxide, mise, fzf, EDITOR=`zed --wait` + VISUAL=`zed --wait`, eza/bat aliases (skipped for AI agents), Ctrl+P fzf quick-open, Alt+S sudo toggle, Ctrl+G fzf git-branch checkout. The retired `/etc/profile.d/sideral-cli-init.sh` + zsh + fish variants have been gone since the 2026-05-10 chezmoi → stow rework.
 - zsh fish-parity via `zsh-syntax-highlighting` + `zsh-autosuggestions` (Fedora main, source-loaded with the upstream-required ordering — autosuggestions first, syntax-highlighting last). No plugin manager needed for two source lines.
-- Switch via `ujust chsh [bash|zsh]` — uses `sudo usermod -s` because ublue removes setuid `chsh` as part of its hardening pass. Interactive picker via `ugum choose` if no shell name passed.
+- Stock Fedora `/etc/zshrc` returns: shell-ux 0.0.0-15 dropped sideral's customized `/etc/zshrc`. The `zsh` RPM reclaims ownership on next upgrade (open concern: `%ghost` workaround may be needed for one release if upgrade balks at file-ownership transfer — verify in first rebase-on-VM).
+- Switch via `fox chsh [bash|zsh]` — uses `sudo usermod -s` because ublue removes setuid `chsh` as part of its hardening pass. No-arg falls back to `read -p` (the `tv` picker considered but dropped — not in Terra or Fedora-main; see fox D-07).
 
 ### Shell init details
 - **AI-agent shell detection**: 14 env-var markers (AGENT, AI_AGENT, CLAUDECODE, CURSOR_AGENT, CURSOR_TRACE_ID, GEMINI_CLI, CODEX_SANDBOX, AUGMENT_AGENT, CLINE_ACTIVE, OPENCODE_CLIENT, TRAE_AI_SHELL_ID, ANTIGRAVITY_AGENT, REPL_ID, COPILOT_MODEL, plus manual `SIDERAL_NO_ALIASES`). Suppresses eza/bat aliases so agents see plain `ls`/`cat` output instead of icons + ANSI escapes.
 - **zoxide** stays as plain `z`/`zi` — `--cmd cd` was tried and clashed with mise's `__zsh_like_cd` chpwd wrapper (whichever loaded last won, the loser silently broke). Plain `z` sidesteps the conflict.
 - **Re-entry guard** — `SIDERAL_CLI_INIT_RAN` flag prevents double-sourcing.
 
-### ujust extension slot (2026-05-02)
-- `/usr/share/ublue-os/just/60-custom.just` fills `ublue-os-just`'s `import? "60-custom.just"` slot.
-- Shipped recipes: `chsh [shell]`, `apply-defaults` (re-stows image defaults into $HOME), `gdrive-setup`, `gdrive-remove`, `tools` (behavior cheatsheet motd via inherited `ugum` + Urllink for OSC-8 hyperlinks).
+### Operator CLI (2026-05-11 — fox replaces ujust)
+- `/usr/bin/fox` — ~20-line bash dispatcher at `/usr/bin/fox` (owned by `sideral-fox`). Routes argv into `/usr/share/sideral/sideral.justfile` via `just -f`. One transform: `fox home <sub>` → `just home::<sub>` (just's module syntax). Reads `SIDERAL_JUSTFILE` and `SIDERAL_OS_RELEASE` from env for test injection.
+- **v1 verbs** (9): `chsh`, `cheatsheet`, `home factory-reset`, `update`, `upgrade`, `rollback`, `status`, `cleanup`, `changelog`. Non-trivial logic (chsh allowlist + usermod; factory-reset skel walk + prompt) lives in libexec bash at `/usr/libexec/sideral/{chsh,home-factory-reset}.sh`. Simple verbs are one-liners wrapping `flatpak`/`rpm-ostree`/`man`.
+- **Cheatsheet** moved to `man 7 sideral` — rendered from `os/modules/fox/src/man/sideral.md` via pandoc in the new `man-build` Containerfile stage (`fedora-minimal:44 + pandoc`, ~150MB transient). Bridged into the final image via `/var/tmp/fox-prebuilt/`, which sideral-fox.spec's `%install` reads from. `apropos sideral` / `man -k sideral` resolve.
+- **Testing**: `os/modules/fox/src/tests/{fox,factory-reset}.test.sh` exercise the dispatcher and factory-reset behavior with tmpfs fixtures + a fake-`just` stub. `just fox-lint && just fox-test` runs as a CI pre-flight job (`ubuntu-24.04`, apt installs just+shellcheck+util-linux, <2min) ahead of the image-build matrix.
+- **`ujust` retired in sideral**: `/usr/share/ublue-os/just/60-custom.just` deleted; `gdrive-setup`/`gdrive-remove` recipes deleted (gdrive integration retired entirely); `apply-defaults` deleted (no more on-image stow). `ujust` itself (the inherited ublue binary) still exists — runs ublue's stock recipes; sideral just doesn't extend it anymore.
 
 ### Welcome UX (2026-05-02)
 - `/etc/user-motd` — every-login banner picked up by inherited `/etc/profile.d/user-motd.sh` (ublue-os-just). Lists common `ujust` recipes.
 - Replaces the previous one-shot `/etc/profile.d/sideral-onboarding.sh` (was bash-only, tied to first-shell; the motd works for any login shell and any session).
 - Per-user opt-out: `touch ~/.config/no-show-user-motd`.
 
-### Google Drive (2026-05-02)
-- Systemd **user** unit `/usr/lib/systemd/user/rclone-gdrive.service` (Type=notify, mounts `~/gdrive` with `--vfs-cache-mode=writes`, Restart=on-failure for transient network drops + token-refresh hiccups).
-- `ujust gdrive-setup` walks rclone OAuth on first run, enables + starts the unit; `ujust gdrive-remove` disables/stops, defensively unmounts via `fusermount3 -u`, then asks via `ugum confirm` whether to wipe the rclone `gdrive:` remote config + remove the empty mount dir.
+### Google Drive — RETIRED (2026-05-11)
+- All gdrive scaffolding deleted: `rclone-gdrive.service` (removed from shell-ux), `rclone`+`fuse3` (removed from sideral-cli-tools Requires + cli-tools packages.txt), `ujust gdrive-setup`/`gdrive-remove` recipes (60-custom.just deleted with the rest of the ujust extension slot).
+- Users who want Google Drive: `rpm-ostree install rclone fuse3`, then write a user-level systemd unit. The 10-line setup is not worth sideral owning — single-user image with one workflow needing this.
 
 ### Fonts
 - Source Serif 4 + Source Sans 3 fetched from Adobe GitHub at image build (`os/modules/fonts/post.sh`); `cascadia-code-fonts`, `jetbrains-mono-fonts-all`, `adwaita-fonts-all`, `opendyslexic-fonts` from Fedora main.
@@ -114,12 +115,12 @@ Persistent memory: decisions, blockers, lessons, todos, deferred ideas.
 ### Distrobox
 - `/etc/distrobox/distrobox.conf` lives in `sideral-services` (was sideral-base; moved 2026-05-02). Defaults only — no `/nix` mounts.
 
-### Dotfile seeding (2026-05-10 — chezmoi → GNU stow)
-- Image-default dotfiles ship as stow packages at `/usr/share/sideral/stow/<pkg>/` (one subdir per concern: `bash`, `zsh`, `ghostty`, `mise`).
-- `/etc/profile.d/sideral-stow-defaults.sh` runs `stow --restow --no-folding` over every package on first login (marker-guarded at `~/.local/state/sideral/stow-defaults-applied`).
-- `ujust apply-defaults` re-runs the same loop for upgrade-time refresh.
-- chezmoi removed from `sideral-cli-tools` Requires; replaced with `stow`. The dual-source diff-prompt UX of chezmoi is gone — image defaults and personal repos no longer auto-reconcile; user manages conflicts manually if both touch the same path.
-- Customization model: replace symlink → real file → edit. To restore default, delete file → `ujust apply-defaults`.
+### Dotfile seeding (2026-05-11 — stow-on-first-login → /etc/skel via useradd)
+- Image-default dotfiles ship as a stow source tree at `/etc/skel/.config/sideral/stow/{bash,zsh,mise,ghostty,zed}/`, plus five pre-farmed relative symlinks at `/etc/skel/{.bashrc,.zshrc,.config/{mise/config.toml,ghostty/config,zed/settings.json}}`. Owned by the new `sideral-home` RPM.
+- `useradd` copies the whole `/etc/skel` tree (cp -a semantics, symlinks preserved) into new user homes. From that moment the dotfiles are **user-domain real files** — sideral never modifies them. Image upgrades that change `/etc/skel` only affect future-created users.
+- Existing users opt in destructively via `fox home factory-reset` (depth-≤2 wipe + reseed under sideral-managed paths; preserves non-sideral subdirs of `~/.config/`).
+- Customization is direct: edit the real file in `$HOME`. Custom user stow packages must live OUTSIDE `~/.config/{sideral,mise,ghostty,zed}/` (those four trees are wiped by factory-reset). Recommended layout: `~/.config/dotfiles/<pkg>/`, applied with `stow --target=$HOME --dir=$HOME/.config/dotfiles <pkg>`.
+- Replaces the 2026-05-10 stow-on-first-login model. `/etc/profile.d/sideral-stow-defaults.sh` + the marker + the read-only `/usr/share/sideral/stow/` tree are all gone (sideral-stow-defaults RPM retired, not renamed). The dotfiles module (`os/modules/dotfiles/`) is deleted entirely.
 
 ### Host-only / non-goals
 - mise runs on the host. Distrobox containers install their own tooling if needed (no shared `/nix`, no shared user profile).
@@ -134,6 +135,9 @@ None.
 - Local: `just lint` (shellcheck) + `just build` (podman build → bootc container lint) + `just rebase` (rpm-ostree rebase to local image).
 
 ## Lessons
+
+- **2026-05-11 — bash dispatcher beats Bun for 20-line dispatch.** fox D-02 originally chose Bun+compile for `/usr/bin/fox`. Reversed same-day after the dispatcher's role narrowed to pure argv routing: shipping a 50–80MB embedded Bun runtime to host ~20 lines of bash-equivalent logic is pure overhead. v2 (`fox home sync`) may reintroduce a typed runtime *when there's substance to host* (TOML manifest parsing + backend drivers for flatpaks/dconf/systemd-user). Lesson generalizes: don't pre-pay runtime cost for anticipated future complexity — pick the substrate when the substance exists.
+- **2026-05-11 — `/etc/skel` is the right seam for "image-default dotfiles + user-domain after seed".** Replaces the prior stow-on-first-login model (chezmoi → stow → /etc/skel). Wins: dotfiles are real, user-visible, user-editable from day 1; `cat ~/.bashrc` shows actual content; no symlink-into-read-only-ostree dance for editing; useradd's cp-a semantics preserve symlinks (the stow tree stays browsable); home-manager-style revert UX recovered via `fox home factory-reset` without nix substrate. Cost: image upgrades don't auto-update existing users — opt-in via `fox home factory-reset` (destructive) or per-file manual cp from `/etc/skel`.
 - **Persistent repo pattern**: repos enabled during build.sh + kept enabled in the shipped image let `rpm-ostree upgrade` pull new releases without touching the image. Currently used for `mise.repo`, `vscode.repo`, `kubernetes.repo`. *(`docker-ce.repo` retired 2026-05-02 with the rootless-podman swap.)*
 - **GNOME-extension download at build time** needs the real `gnome-shell --version` of the running container — call `gnome-shell --version` inside the container (silverblue-main ships gnome-shell), then query `extensions.gnome.org/extension-info/?uuid=<uuid>&shell_version=<N>`. `glib2-devel`/`jq`/`unzip` are installed and removed in the same script so they don't bloat the final layer.
 - **`dconf update` must run after `COPY system_files/etc /etc`.** The Containerfile has a dedicated RUN step for that, followed by the final `ostree container commit`.

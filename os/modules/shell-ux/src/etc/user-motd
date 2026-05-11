@@ -2,13 +2,14 @@
   ─────────────────────────────────────────────────────────────────
   sideral OS — Fedora atomic desktop
 
-  Common tasks (all via ujust):
-    ujust                            list every recipe (sideral + ublue)
-    ujust tools                      cheatsheet of CLIs / aliases / keybinds
-    ujust chsh [bash|zsh]            switch login shell (default: zsh)
-    ujust apply-defaults             re-symlink image defaults via stow
-    ujust gdrive-setup               auto-mount Google Drive at ~/gdrive
-    ujust update                     pull latest image + flatpak updates
+  Common tasks (operator CLI):
+    fox                              list every fox recipe
+    man sideral                      cheatsheet (alias: fox cheatsheet)
+    fox chsh [bash|zsh]              switch login shell (default: bash)
+    fox upgrade                      stage rpm-ostree upgrade
+    fox rollback                     swap to the previous deployment
+    fox update                       update installed flatpaks
+    fox home factory-reset           reset sideral dotfiles from /etc/skel
 
   Hide this banner: touch ~/.config/no-show-user-motd
   ─────────────────────────────────────────────────────────────────

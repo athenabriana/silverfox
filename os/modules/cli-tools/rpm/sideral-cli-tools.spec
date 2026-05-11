@@ -9,9 +9,10 @@
 #   • repo.terra.fyralabs.com: starship, ghostty, zed (repo shipped by this package)
 #   • yum.fury.io/rsteube:    carapace-bin      (repo shipped by this package)
 #
-# zed is set as both $EDITOR and $VISUAL. zsh is the default shell;
-# bash stays available via `ujust chsh bash`. Shell init files are
-# symlinked into $HOME by stow (sideral-stow-defaults) on first login.
+# zed is set as both $EDITOR and $VISUAL by the /etc/skel-seeded user
+# .bashrc / .zshrc. bash is the default shell; zsh is reached via
+# `fox chsh zsh`. User dotfiles ship via sideral-home's /etc/skel tree
+# (useradd seeds them once; user-domain thereafter).
 
 Name:           sideral-cli-tools
 Version:        %{?_sideral_version}%{!?_sideral_version:0.0.0}
@@ -40,21 +41,19 @@ Requires:       cmake
 Requires:       zsh
 Requires:       zsh-syntax-highlighting
 Requires:       zsh-autosuggestions
-Requires:       rclone
-Requires:       fuse3
 Requires:       ghostty
 Requires:       zed
 
 %description
 Meta-package: depends on the RPM-packaged CLI tools sideral wires into
-the user shell. Shell init lives in ~/.bashrc and ~/.zshrc, symlinked
-from /usr/share/sideral/stow/ by sideral-stow-defaults on first login.
-Zed is the default editor for both EDITOR and VISUAL — git, sudoedit,
-mise edit, and any tool that spawns an editor opens a Zed buffer and
-blocks until it closes (`zed --wait`). zsh is the default interactive
-shell; bash stays available via `ujust chsh bash`. Also ships
-/etc/yum.repos.d/{carapace,terra}.repo so post-install `dnf upgrade`
-keeps carapace-bin + ghostty + zed current between image rebuilds.
+the user shell. Shell init lives in user-domain ~/.bashrc and ~/.zshrc
+(seeded once from /etc/skel by useradd, owned by sideral-home). Zed is
+the default editor for both EDITOR and VISUAL — git, sudoedit, mise
+edit, and any tool that spawns an editor opens a Zed buffer and blocks
+until it closes (`zed --wait`). bash is the default login shell; zsh is
+reached via `fox chsh zsh`. Also ships /etc/yum.repos.d/{carapace,terra}.repo
+so post-install `dnf upgrade` keeps carapace-bin + ghostty + zed current
+between image rebuilds.
 
 %prep
 %setup -q
@@ -68,6 +67,15 @@ cp -a etc %{buildroot}/
 /etc/yum.repos.d/terra.repo
 
 %changelog
+* Mon May 11 2026 GitHub Actions <noreply@github.com> - 0.0.0-14
+- Drop Requires: rclone + fuse3 — gdrive integration retired with the
+  fox feature. Users wanting Google Drive `rpm-ostree install rclone
+  fuse3` and write their own user unit (sideral doesn't own that
+  workflow anymore). Also drops the rclone-gdrive.service unit shipped
+  by sideral-shell-ux + the ujust gdrive-setup/gdrive-remove recipes.
+- Add `just` to the cli-tools/packages.txt (NOT as a Requires here —
+  it's a Requires of sideral-fox, but installed in Layer 1 so
+  sideral-fox's rpm -Uvh in Layer 2 resolves its dep graph).
 * Mon May 11 2026 GitHub Actions <noreply@github.com> - 0.0.0-13
 - Swap editors: drop Requires: helix + code, add Requires: zed. Zed
   is the GPU-accelerated GUI editor from Terra (stable channel) and

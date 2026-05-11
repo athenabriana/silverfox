@@ -1,0 +1,1 @@
+.config/sideral/stow/bash/.bashrc

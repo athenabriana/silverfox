@@ -1,11 +1,12 @@
-# sideral-shell-ux — system-wide shell UX scaffolding.
-#
-# Lives in the shell-ux module.
+# sideral-shell-ux — narrowed system-level shell concerns. Owns three
+# paths under /etc and nothing under /usr. See %changelog for the prior
+# scope (operator-CLI extension slot + user-unit for cloud-storage
+# mount, both retired with the fox feature).
 
 Name:           sideral-shell-ux
 Version:        %{?_sideral_version}%{!?_sideral_version:0.0.0}
 Release:        1%{?dist}
-Summary:        sideral shell scaffolding (zshrc umask, login hooks, ujust, mise system config)
+Summary:        sideral system-level shell scaffolding (user-motd, mise system config, login-shell migrate)
 License:        MIT
 URL:            https://github.com/athenabriana/sideral
 Source0:        %{name}-%{version}.tar.gz
@@ -14,34 +15,29 @@ BuildArch:      noarch
 Requires:       bash
 
 %description
-Ships system-wide shell scaffolding — the parts that have to live in
-/etc or /usr because they're per-system, not per-user. Interactive-
-shell wiring (starship, atuin, zoxide, mise, fzf, carapace, eza/bat
-aliases, agent guard, Ctrl+P / Alt-S / Ctrl-G keybindings) lives in
-~/.bashrc and ~/.zshrc, symlinked into $HOME by GNU stow via
-sideral-stow-defaults — users break the symlink to a real file when
-they want to customize.
+Ships the small set of /etc paths that have to be system-level (not
+user-domain): the every-login banner, the mise system config, and a
+rescue script that switches a user's login shell to zsh if its binary
+no longer exists. Everything user-facing (interactive-shell wiring,
+keybindings, AI-agent guard, EDITOR/VISUAL) ships via sideral-home's
+/etc/skel seed instead, copied into new user homes by useradd.
 
-/etc/zshrc:
-  Replaces Fedora's stock /etc/zshrc via rpm -Uvh --replacefiles. Just
-  `umask 022`. Stock Fedora /etc/zshrc sources /etc/profile.d/*.sh in
-  bash syntax, which can break on bashisms — we drop that and rely on
-  /etc/zprofile (login shells) to populate env from /etc/profile.d.
+/etc/user-motd:
+  Every-login banner picked up by ublue-os-just's user-motd.sh. Lists
+  the common `fox` recipes for sideral and `man sideral` for the
+  cheatsheet. Per-user opt-out: `touch ~/.config/no-show-user-motd`.
 
-Shell maintenance — /etc/profile.d/ login-time scripts:
-  sideral-shell-migrate.sh: auto-migrates users whose login shell binary
-  no longer exists (e.g. fish removed) to /usr/bin/zsh (sudo -n, safe).
-
-mise config — /etc/mise/config.toml:
+/etc/mise/config.toml:
   System-wide settings (trusted_config_paths, not_found_auto_install,
-  etc.). User toolchain declared in ~/.config/mise/config.toml (seeded
-  by sideral-stow-defaults on first login).
+  etc.). User toolchain declared in user-domain ~/.config/mise/config.toml
+  (seeded by sideral-home's /etc/skel tree on useradd).
 
-ujust recipes — /usr/share/ublue-os/just/60-custom.just:
-  chsh [bash|zsh], apply-defaults, gdrive-setup, gdrive-remove, tools.
-
-user-motd — /etc/user-motd:
-  Every-login banner picked up by ublue-os-just's user-motd.sh.
+/etc/profile.d/sideral-shell-migrate.sh:
+  Auto-migrates users whose login shell binary no longer exists (e.g.
+  legacy /usr/bin/fish or /usr/bin/nu accounts after a sideral rebase)
+  to /usr/bin/zsh. Uses sudo -n so a missing sudoers entry fails fast
+  rather than blocking login with a password prompt. Kept through v1.0
+  minimum; retire when nobody plausibly still on a removed shell.
 
 %prep
 %setup -q
@@ -49,17 +45,31 @@ user-motd — /etc/user-motd:
 %install
 mkdir -p %{buildroot}
 cp -a etc %{buildroot}/
-cp -a usr %{buildroot}/
 
 %files
 /etc/profile.d/sideral-shell-migrate.sh
-/etc/zshrc
 /etc/user-motd
 /etc/mise/config.toml
-/usr/share/ublue-os/just/60-custom.just
-/usr/lib/systemd/user/rclone-gdrive.service
 
 %changelog
+* Mon May 11 2026 GitHub Actions <noreply@github.com> - 0.0.0-15
+- Narrow scope to system-level shell concerns. Drop:
+  • /etc/zshrc (sideral's customized one) — stock Fedora /etc/zshrc
+    from the `zsh` RPM reclaims the path. If the first upgrade after
+    landing balks at the file-ownership transfer, ship %ghost /etc/zshrc
+    for one release as a soft handoff (open concern, verify in first
+    rebase-on-VM test).
+  • /usr/share/ublue-os/just/60-custom.just + %dir /usr/share/ublue-os/just
+    — ujust extension slot retired; sideral now owns its own
+    operator CLI via /usr/bin/fox + /usr/share/sideral/sideral.justfile
+    (sideral-fox RPM).
+  • /usr/lib/systemd/user/rclone-gdrive.service — gdrive integration
+    retired with the fox feature; rclone + fuse3 dropped from
+    sideral-cli-tools Requires in the same release.
+- Rewrite /etc/user-motd: every `ujust <recipe>` row → `fox <recipe>`;
+  `tools` row → `man sideral` (alias: `fox cheatsheet`); add `fox home
+  factory-reset` row; drop `gdrive-setup`, `apply-defaults` rows.
+- %description rewritten for narrowed scope.
 * Mon May 04 2026 GitHub Actions <noreply@github.com> - 0.0.0-14
 - Move all interactive-shell wiring to chezmoi-managed user dotfiles
   (sideral-chezmoi-defaults). Drop /etc/profile.d/sideral-cli-init.sh,

@@ -27,7 +27,6 @@ VERSION="${3:-${_SIDERAL_VERSION:-0.0.0.dev}}"
 
 mkdir -p "$TOPDIR"/{SOURCES,SPECS,BUILD,BUILDROOT,RPMS}
 
-built_count=0
 expected_count=0
 
 for moddir in "$MOD_ROOT"/*/; do
