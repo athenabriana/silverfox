@@ -24,16 +24,12 @@ update *args:
       nh home switch --impure -c "$(whoami)"
     fi
 
-# Stage rpm-ostree upgrade and distrobox upgrade.
+# Stage rpm-ostree upgrade.
 # With --merge: applies new defaults from /etc/skel (conflict-aware).
 update-system *merge="":
     #!/usr/bin/bash
     set -euo pipefail
     rpm-ostree upgrade "$@"
-    if command -v distrobox >/dev/null 2>&1; then
-      echo "--- distrobox upgrade ---"
-      distrobox upgrade -a
-    fi
     if [ "$merge" = "--merge" ]; then
       echo "--- skel merge ---"
       if [ -f "$HOME/.config/sideral/.skel-pending" ]; then

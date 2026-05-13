@@ -20,6 +20,9 @@
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    # devenv para ambientes de desenvolvimento declarativos por projeto.
+    # Descomente para usar `devenv shell` no lugar de distrobox/toolbox:
+    #   devenv.url = "github:cachix/devenv";
   };
 
   outputs = { self, nixpkgs, home-manager, ... }: let

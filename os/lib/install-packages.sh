@@ -28,7 +28,7 @@ to_remove=()
 for pkg in firefox firefox-langpacks dconf-editor \
            gnome-software gnome-software-rpm-ostree \
            gnome-terminal gnome-terminal-nautilus \
-           ublue-os-just; do
+           ublue-os-just toolbox distrobox; do
     rpm -q "$pkg" >/dev/null 2>&1 && to_remove+=("$pkg")
 done
 [ ${#to_remove[@]} -gt 0 ] && dnf5 remove -y "${to_remove[@]}"
