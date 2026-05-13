@@ -24,20 +24,16 @@ lint: fox-lint
 # Shellcheck + bash syntax for fox dispatcher / libexec / tests
 fox-lint:
     bash -n os/modules/fox/src/bin/fox
-    bash -n os/modules/fox/src/libexec/home-factory-reset.sh
     bash -n os/modules/fox/src/libexec/chsh.sh
     shellcheck -x \
         os/modules/fox/src/bin/fox \
-        os/modules/fox/src/libexec/home-factory-reset.sh \
         os/modules/fox/src/libexec/chsh.sh \
         os/modules/fox/src/tests/lib.sh \
-        os/modules/fox/src/tests/fox.test.sh \
-        os/modules/fox/src/tests/factory-reset.test.sh
+        os/modules/fox/src/tests/fox.test.sh
 
-# Run fox integration tests (dispatcher + factory-reset)
+# Run fox integration tests
 fox-test:
     bash os/modules/fox/src/tests/fox.test.sh
-    bash os/modules/fox/src/tests/factory-reset.test.sh
 
 # Render sideral(7) locally for preview (requires pandoc on $PATH)
 fox-gen-man:
