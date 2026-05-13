@@ -6,10 +6,11 @@
     fox                              list every recipe
     man sideral                      cheatsheet (alias: fox cheatsheet)
     fox chsh [bash|zsh]              switch login shell (default: bash)
-    fox upgrade                      full system upgrade (ostree + flatpak + distrobox)
+    fox update                       sync flatpaks + nix config
+    fox update-system [--merge]      full system upgrade + apply skel defaults
     fox rollback                     swap to the previous deployment
     fox toggle-banner                show/hide this banner
-    fox home factory-reset           reset sideral dotfiles from /etc/skel
+    fox doctor                       diagnose nix + system health
     fox upgrade-firmware             update device firmware
 
   Hide this banner: fox toggle-banner

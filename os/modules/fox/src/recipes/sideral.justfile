@@ -1,5 +1,5 @@
 # sideral.justfile — operator-CLI recipe surface, dispatched by /usr/bin/fox.
-# Verbs: chsh, cheatsheet, update, upgrade, rollback, status, cleanup,
+# Verbs: chsh, cheatsheet, update, update-system, rollback, status, cleanup,
 # changelog, toggle-banner, upgrade-firmware, diff, edit, doctor
 # (top-level) + home::factory-reset (module).
 
@@ -24,15 +24,38 @@ update *args:
       nh home switch --impure -c "$(whoami)"
     fi
 
-# Stage rpm-ostree upgrade, flatpak update, and distrobox upgrade all at once
-upgrade *args:
+# Stage rpm-ostree upgrade, flatpak update, and distrobox upgrade all at once.
+# With --merge: also applies new defaults from /etc/skel (conflict-aware).
+update-system *merge="":
     #!/usr/bin/bash
+    set -euo pipefail
     rpm-ostree upgrade "$@"
     echo "--- flatpak update ---"
     flatpak update -y
     if command -v distrobox >/dev/null 2>&1; then
       echo "--- distrobox upgrade ---"
       distrobox upgrade -a
+    fi
+    if [ "$merge" = "--merge" ]; then
+      echo "--- skel merge ---"
+      if [ -f "$HOME/.config/sideral/.skel-pending" ]; then
+        echo "Applying pending skel defaults..."
+        while IFS= read -r relpath; do
+          [ -z "$relpath" ] && continue
+          src="/etc/skel/$relpath"
+          dst="$HOME/$relpath"
+          if [ -f "$src" ] || [ -L "$src" ]; then
+            echo "  $relpath"
+            rm -f "$dst"
+            mkdir -p "$(dirname "$dst")"
+            cp -a "$src" "$dst"
+          fi
+        done < "$HOME/.config/sideral/.skel-pending"
+        rm -f "$HOME/.config/sideral/.skel-pending"
+        echo "Skel defaults applied. Re-login or source your rc files."
+      else
+        echo "No pending skel defaults."
+      fi
     fi
     echo "Reboot to apply the staged deployment."
 
@@ -127,4 +150,3 @@ diff:
 edit:
     exec $EDITOR ~/.config/nix/flake.nix
 
-mod home

@@ -5,7 +5,6 @@
 #   /usr/share/sideral/sideral.justfile           — top-level Justfile (verbs)
 #   /usr/share/sideral/home.just                  — `mod home` recipes
 #   /usr/libexec/sideral/chsh.sh                  — login-shell switcher (allowlist: bash, zsh)
-#   /usr/libexec/sideral/home-factory-reset.sh    — hard wipe + reseed from /etc/skel
 #   /usr/share/man/man7/sideral.7.gz              — `man 7 sideral` cheatsheet
 #
 # Artifacts are pre-built into /var/tmp/fox-prebuilt/ by the Containerfile
@@ -57,7 +56,6 @@ install -D -m 0755 /var/tmp/fox-prebuilt/bin/fox                       %{buildro
 install -D -m 0644 /var/tmp/fox-prebuilt/sideral.7.gz                  %{buildroot}/usr/share/man/man7/sideral.7.gz
 install -D -m 0644 /var/tmp/fox-prebuilt/recipes/sideral.justfile      %{buildroot}/usr/share/sideral/sideral.justfile
 install -D -m 0644 /var/tmp/fox-prebuilt/recipes/home.just             %{buildroot}/usr/share/sideral/home.just
-install -D -m 0755 /var/tmp/fox-prebuilt/libexec/home-factory-reset.sh %{buildroot}/usr/libexec/sideral/home-factory-reset.sh
 install -D -m 0755 /var/tmp/fox-prebuilt/libexec/chsh.sh               %{buildroot}/usr/libexec/sideral/chsh.sh
 
 %files
@@ -67,7 +65,6 @@ install -D -m 0755 /var/tmp/fox-prebuilt/libexec/chsh.sh               %{buildro
 /usr/share/sideral/sideral.justfile
 /usr/share/sideral/home.just
 %dir /usr/libexec/sideral
-/usr/libexec/sideral/home-factory-reset.sh
 /usr/libexec/sideral/chsh.sh
 
 %changelog

@@ -64,6 +64,7 @@ cp -a etc %{buildroot}/
 /etc/systemd/system/multi-user.target.wants/sideral-nix-bootstrap.service
 /etc/sudoers.d/nix-sudo-env
 /etc/profile.d/sideral-nix-init.sh
+/etc/profile.d/sideral-skel-merge.sh
 
 %changelog
 * Wed May 13 2026 GitHub Actions <noreply@github.com> - 0.0.0-1
