@@ -61,13 +61,13 @@ for p in "${paths[@]}"; do
         fi
     done
     if [[ "$skip" -eq 1 ]]; then
-        ((skip_count++))
+        skip_count=$((skip_count + 1))
         continue
     fi
     rm -rf "${HOME:?}/$p"
     mkdir -p "$(dirname "$HOME/$p")"
     cp -a "$SKEL_DIR/$p" "$HOME/$p"
-    ((reset_count++))
+    reset_count=$((reset_count + 1))
 done
 
 echo "Reset $reset_count entries from $SKEL_DIR ($skip_count skipped)."
