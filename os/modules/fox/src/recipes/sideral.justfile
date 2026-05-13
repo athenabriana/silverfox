@@ -24,14 +24,12 @@ update *args:
       nh home switch --impure -c "$(whoami)"
     fi
 
-# Stage rpm-ostree upgrade, flatpak update, and distrobox upgrade all at once.
-# With --merge: also applies new defaults from /etc/skel (conflict-aware).
+# Stage rpm-ostree upgrade and distrobox upgrade.
+# With --merge: applies new defaults from /etc/skel (conflict-aware).
 update-system *merge="":
     #!/usr/bin/bash
     set -euo pipefail
     rpm-ostree upgrade "$@"
-    echo "--- flatpak update ---"
-    flatpak update -y
     if command -v distrobox >/dev/null 2>&1; then
       echo "--- distrobox upgrade ---"
       distrobox upgrade -a
