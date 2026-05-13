@@ -33,7 +33,6 @@ requiring `systemctl --user enable podman.socket` as manual setup.
 
 %install
 mkdir -p %{buildroot}
-cp -a etc %{buildroot}/
 cp -a usr %{buildroot}/
 
 %files
