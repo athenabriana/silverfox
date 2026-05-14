@@ -27,7 +27,7 @@ log "Removing inherited base packages"
 to_remove=()
 for pkg in firefox firefox-langpacks dconf-editor \
            gnome-software gnome-software-rpm-ostree \
-           gnome-terminal gnome-terminal-nautilus \
+           gnome-terminal gnome-terminal-nautilus ptyxis \
            ublue-os-just toolbox distrobox; do
     rpm -q "$pkg" >/dev/null 2>&1 && to_remove+=("$pkg")
 done
