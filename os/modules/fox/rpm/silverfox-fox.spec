@@ -59,6 +59,9 @@ install -D -m 0755 /var/tmp/fox-prebuilt/libexec/chsh.sh               %{buildro
 /usr/libexec/silverfox/chsh.sh
 
 %changelog
+* Thu May 14 2026 GitHub Actions <noreply@github.com> - 0.0.0-2
+- Add `home::reset` recipe (home.just): destrói ~/Dotfiles/, recopia
+  de /etc/skel/Dotfiles/, reaplica stow. Acionado via `fox home reset`.
 * Mon May 11 2026 GitHub Actions <noreply@github.com> - 0.0.0-1
 - Initial. Silverfox-owned operator CLI replacing ujust + 60-custom.just.
   Bash dispatcher (~20 lines) at /usr/bin/fox routes into

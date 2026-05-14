@@ -1,8 +1,8 @@
 # silverfox-home — user-domain seed via /etc/skel + skel-merge.
 #
 # Ships a stow source tree at /etc/skel/Dotfiles/{shell,ghostty,nix}/
-# and a profile.d script that copies new Dotfiles to $HOME/Dotfiles on login
-# and runs stow on each package.
+# and a profile.d script that bootstraps ~/Dotfiles/ from skel on first
+# login, then runs stow on each package every login.
 
 Name:           silverfox-home
 Version:        %{?_silverfox_version}%{!?_silverfox_version:0.0.0}
@@ -23,11 +23,10 @@ on first login:
     configurações padrão (shell unifica .bashrc + .zshrc com starship/
     atuin/zoxide/mise/fzf; ghostty; nix flake para nh).
 
-  - /etc/profile.d/silverfox-skel-merge.sh — em todo login copia arquivos
-    novos de /etc/skel/Dotfiles para $HOME/Dotfiles (ignora existentes) e
-    roda stow em cada pacote para criar os symlinks em $HOME.
-
-Arquivos já existentes em $HOME nunca são modificados.
+  - /etc/profile.d/silverfox-skel-merge.sh — no primeiro login copia a
+    árvore inteira de /etc/skel/Dotfiles para $HOME/Dotfiles; em todo
+    login roda stow em cada pacote para criar os symlinks em $HOME.
+    Use `fox home reset` para restaurar o estado original do sistema.
 
 %prep
 %setup -q
@@ -53,6 +52,10 @@ cp -a etc %{buildroot}/
 /etc/profile.d/silverfox-skel-merge.sh
 
 %changelog
+* Thu May 14 2026 GitHub Actions <noreply@github.com> - 0.0.0-3
+- skel-merge.sh: replace "sempre copia arquivos novos no login" com
+  bootstrap único (só copia se ~/Dotfiles/ não existir) + stow sempre.
+  O reset manual fica com `fox home reset`.
 * Thu May 14 2026 GitHub Actions <noreply@github.com> - 0.0.0-2
 - Sync flake.nix with downstream usage: add nixd/nil/opencode to
   home.packages (Nix LSPs + opencode CLI as baseline tooling); simplify
