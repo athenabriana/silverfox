@@ -40,7 +40,7 @@ fox cleanup    # prune containers, flatpaks, nix store
 Boot from a USB to try it before installing, or rebase directly:
 
 ```bash
-sudo rpm-ostree rebase ostree-image-signed:docker://ghcr.io/athenabriana/silverfox:latest
+sudo rpm-ostree rebase ostree-unverified-registry:ghcr.io/athenabriana/silverfox:latest
 ```
 
 <sub>Built on [ublue-os/silverblue-main](https://github.com/ublue-os/silverblue-main).</sub>
