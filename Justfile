@@ -35,9 +35,6 @@ fox-lint:
 fox-test:
     bash os/modules/fox/src/tests/fox.test.sh
 
-# Render silverfox(7) locally for preview (requires pandoc on $PATH)
-fox-gen-man:
-    pandoc -s -t man os/modules/fox/src/man/silverfox.md -o /tmp/silverfox.7
     @echo "Preview: man -l /tmp/silverfox.7"
 
 # Rebase host to the locally-built image (requires reboot after)

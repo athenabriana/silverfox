@@ -34,20 +34,6 @@
 
 ARG BASE_IMAGE="ghcr.io/ublue-os/silverblue-main:44"
 
-# ── Stage 0: man-build ──────────────────────────────────────────────────
-# Render the silverfox(7) manpage from pandoc Markdown. A tiny stage
-# (fedora-minimal + pandoc + gzip, ~150MB transient) so the pandoc
-# toolchain never lands in the final image. The output is consumed by
-# the Layer-2 RUN below via COPY --from=man-build.
-#
-# `mkdir -p /out` is required — pandoc does not create its output dir.
-FROM registry.fedoraproject.org/fedora-minimal:44 AS man-build
-RUN microdnf install -y --setopt=install_weak_deps=0 pandoc gzip && \
-    microdnf clean all && \
-    mkdir -p /out
-COPY modules/fox/src/man/silverfox.md /workspace/silverfox.md
-RUN pandoc -s -t man /workspace/silverfox.md -o /out/silverfox.7 && \
-    gzip -9 /out/silverfox.7
 
 # ── Stage 1a: stable context ────────────────────────────────────────────
 # Only content that changes rarely: packages.txt + repo files + the
@@ -111,11 +97,6 @@ RUN --mount=type=bind,from=ctx-packages,source=/,target=/ctx \
 # auto-remove ~73 transitively-pulled packages, several of which are
 # part of the silverblue base. rpm -e removes only the two packages we
 # asked for; the orphaned deps stay put.
-# silverfox-fox bridge: the manpage comes from the `man-build` stage; the
-# bash dispatcher + Justfiles + libexec scripts come directly from the
-# build context. Both land in /var/tmp/fox-prebuilt/ which silverfox-fox.spec's
-# %install reads from, then the same RUN cleans the bridge dir up.
-COPY --from=man-build /out/silverfox.7.gz                /var/tmp/fox-prebuilt/silverfox.7.gz
 COPY modules/fox/src/bin                               /var/tmp/fox-prebuilt/bin
 COPY modules/fox/src/recipes                           /var/tmp/fox-prebuilt/recipes
 COPY modules/fox/src/libexec                           /var/tmp/fox-prebuilt/libexec

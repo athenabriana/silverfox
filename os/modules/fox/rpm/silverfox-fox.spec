@@ -2,16 +2,14 @@
 #
 # Ships:
 #   /usr/bin/fox                                  — bash dispatcher (~20 lines)
-#   /usr/share/silverfox/silverfox.justfile           — top-level Justfile (verbs)
-#   /usr/share/silverfox/home.just                  — `mod home` recipes
-#   /usr/libexec/silverfox/chsh.sh                  — login-shell switcher (allowlist: bash, zsh)
-#   /usr/share/man/man7/silverfox.7.gz              — `man 7 silverfox` cheatsheet
+#   /usr/share/silverfox/silverfox.justfile       — top-level Justfile (verbs)
+#   /usr/share/silverfox/home.just                — `mod home` recipes
+#   /usr/libexec/silverfox/chsh.sh                — login-shell switcher
 #
-# Artifacts are pre-built into /var/tmp/fox-prebuilt/ by the Containerfile
-# (manpage rendered by the `man-build` pandoc stage; bash + Justfiles +
-# libexec scripts COPY'd direct from the build context). %install reads
-# from there and lays everything down at the canonical paths above. The
-# Containerfile cleans up /var/tmp/fox-prebuilt/ in the same RUN that
+# Artifacts are pre-built into /var/tmp/fox-prebuilt/ by the Containerfile;
+# bash + Justfiles + libexec scripts COPY'd direct from the build context.
+# %install reads from there and lays everything down at the canonical paths.
+# The Containerfile cleans up /var/tmp/fox-prebuilt/ in the same RUN that
 # runs build-rpms.sh, so the prebuilt tree never ships in the image.
 #
 # Source0 is the synthesized empty/sentinel tarball that build-rpms.sh
@@ -32,7 +30,6 @@ Requires:       bash >= 4
 Requires:       coreutils
 Requires:       findutils
 Requires:       gawk
-Requires:       man-db
 Requires:       rpm-ostree
 Requires:       flatpak
 Requires:       sudo
@@ -41,26 +38,20 @@ Requires:       shadow-utils
 %description
 silverfox-fox ships the `fox` operator CLI: a ~20-line bash dispatcher at
 /usr/bin/fox that routes argv into /usr/share/silverfox/silverfox.justfile
-via `just`. Verbs in v1: chsh, cheatsheet, update, upgrade, rollback,
-status, cleanup, changelog, plus `home factory-reset` (hard reseed of
-silverfox-managed paths under $HOME from /etc/skel). The cheatsheet ships
-as a man 7 page rendered from os/modules/fox/src/man/silverfox.md via
-pandoc in the image's `man-build` Containerfile stage. Silverfox-owned
-operator CLI, decoupled from any inherited tooling slot.
+via `just`. Verbs in v1: chsh, sync, upgrade, rollback, status, cleanup,
+changelog, config, diff, doctor, toggle-banner, upgrade-firmware.
 
 %prep
 %setup -q
 
 %install
 install -D -m 0755 /var/tmp/fox-prebuilt/bin/fox                       %{buildroot}/usr/bin/fox
-install -D -m 0644 /var/tmp/fox-prebuilt/silverfox.7.gz                  %{buildroot}/usr/share/man/man7/silverfox.7.gz
 install -D -m 0644 /var/tmp/fox-prebuilt/recipes/silverfox.justfile      %{buildroot}/usr/share/silverfox/silverfox.justfile
 install -D -m 0644 /var/tmp/fox-prebuilt/recipes/home.just             %{buildroot}/usr/share/silverfox/home.just
 install -D -m 0755 /var/tmp/fox-prebuilt/libexec/chsh.sh               %{buildroot}/usr/libexec/silverfox/chsh.sh
 
 %files
 /usr/bin/fox
-/usr/share/man/man7/silverfox.7.gz
 %dir /usr/share/silverfox
 /usr/share/silverfox/silverfox.justfile
 /usr/share/silverfox/home.just
