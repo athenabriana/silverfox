@@ -37,6 +37,7 @@ cp -a etc %{buildroot}/
 
 %files
 %dir /etc/skel/Dotfiles
+/etc/skel/Dotfiles/flake.nix
 %dir /etc/skel/Dotfiles/shell
 /etc/skel/Dotfiles/shell/.bashrc
 /etc/skel/Dotfiles/shell/.zshrc
@@ -44,11 +45,34 @@ cp -a etc %{buildroot}/
 %dir /etc/skel/Dotfiles/ghostty/.config
 %dir /etc/skel/Dotfiles/ghostty/.config/ghostty
 /etc/skel/Dotfiles/ghostty/.config/ghostty/config
-%dir /etc/skel/Dotfiles/nix
-%dir /etc/skel/Dotfiles/nix/.config
-%dir /etc/skel/Dotfiles/nix/.config/nix
-/etc/skel/Dotfiles/nix/.config/nix/flake.nix
-/etc/skel/Dotfiles/nix/.config/nix/flake.lock
+/etc/skel/Dotfiles/ghostty/.config/ghostty/config-base16
+%dir /etc/skel/Dotfiles/flavours
+%dir /etc/skel/Dotfiles/flavours/.config
+%dir /etc/skel/Dotfiles/flavours/.config/flavours
+/etc/skel/Dotfiles/flavours/.config/flavours/config.toml
+%dir /etc/skel/Dotfiles/flavours/.config/flavours/templates
+%dir /etc/skel/Dotfiles/flavours/.config/flavours/templates/cosmic-dark-accent
+%dir /etc/skel/Dotfiles/flavours/.config/flavours/templates/cosmic-dark-accent/templates
+/etc/skel/Dotfiles/flavours/.config/flavours/templates/cosmic-dark-accent/templates/default.mustache
+%dir /etc/skel/Dotfiles/flavours/.config/flavours/templates/cosmic-dark
+%dir /etc/skel/Dotfiles/flavours/.config/flavours/templates/cosmic-dark/templates
+/etc/skel/Dotfiles/flavours/.config/flavours/templates/cosmic-dark/templates/default.mustache
+%dir /etc/skel/Dotfiles/flavours/.config/flavours/templates/starship
+%dir /etc/skel/Dotfiles/flavours/.config/flavours/templates/starship/templates
+/etc/skel/Dotfiles/flavours/.config/flavours/templates/starship/templates/default.mustache
+%dir /etc/skel/Dotfiles/flavours/.config/flavours/templates/zed
+%dir /etc/skel/Dotfiles/flavours/.config/flavours/templates/zed/templates
+/etc/skel/Dotfiles/flavours/.config/flavours/templates/zed/templates/default.mustache
+%dir /etc/skel/Dotfiles/starship
+%dir /etc/skel/Dotfiles/starship/.config
+/etc/skel/Dotfiles/starship/.config/starship.toml
+%dir /etc/skel/Dotfiles/zed
+%dir /etc/skel/Dotfiles/zed/.config
+%dir /etc/skel/Dotfiles/zed/.config/zed
+/etc/skel/Dotfiles/zed/.config/zed/settings.json
+%dir /etc/skel/Dotfiles/zed/.config/zed/themes
+/etc/skel/Dotfiles/zed/.config/zed/themes/base16-dark.json
+/etc/skel/Dotfiles/zed/.config/zed/themes/base16-light.json
 /etc/profile.d/silverfox-skel-merge.sh
 
 %changelog
