@@ -50,19 +50,16 @@ dotfiles-sync:
         echo "Copiando $SKEL → $HOME_DOTFILES…"
         cp -a "$SKEL" "$HOME_DOTFILES"
     fi
-    for f in "$HOME_DOTFILES/nix/flake.nix" "$HOME_DOTFILES/nix/modules/home.nix"; do
+    for f in "$HOME_DOTFILES/nix/flake.nix" "$HOME_DOTFILES/nix/modules/home/default.nix"; do
         if [ -f "$f" ] && grep -q '__USER__' "$f" 2>/dev/null; then
             echo "Substituindo __USER__ → $USER em $(basename "$f")…"
             sed -i "s/__USER__/$USER/g" "$f"
         fi
     done
-    if command -v stow >/dev/null 2>&1; then
-        find "$HOME_DOTFILES" -mindepth 1 -maxdepth 1 -type d -print0 \
+    if command -v stow >/dev/null 2>&1 && [ -d "$HOME_DOTFILES/stow" ]; then
+        find "$HOME_DOTFILES/stow" -mindepth 1 -maxdepth 1 -type d -print0 \
           | while IFS= read -r -d '' pkg; do
-              case "${pkg##*/}" in
-                nix) continue ;;
-              esac
-              stow -R -d "$HOME_DOTFILES" -t "$HOME" --no-folding "${pkg##*/}" 2>/dev/null || true
+              stow -R -d "$HOME_DOTFILES/stow" -t "$HOME" --no-folding "${pkg##*/}" 2>/dev/null || true
             done
     fi
     echo "dotfiles: sincronizado."
