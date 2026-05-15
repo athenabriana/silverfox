@@ -5,7 +5,7 @@
 # Sources:
 #   • Fedora 44 main:        stow, atuin, fzf, bat, eza, ripgrep,
 #                            zoxide, gh, git-lfs, gcc, make, cmake,
-#                            zsh, just, chromium + zsh plugins
+#                            zsh, just, gum, chromium + zsh plugins
 #   • repo.terra.fyralabs.com: starship, ghostty, zed (repo shipped via silverfox-cli-tools)
 #   • yum.fury.io/rsteube:   carapace-bin (repo shipped via silverfox-cli-tools)
 #
@@ -46,6 +46,11 @@ zsh-autosuggestions
 # a ~20-line bash dispatcher that calls `just -f /usr/share/silverfox/
 # silverfox.justfile <verb>`. Standalone Rust binary in Fedora 44 main.
 just
+# gum — Charmbracelet TUI toolkit used by fox recipes: gum choose (chsh),
+# gum filter + gum spin (theme-apply), gum confirm (clean/dotfiles-reset/
+# os-rollback). Installed here in Layer 1 so rpm -Uvh of silverfox-fox
+# (which declares Requires: gum) resolves cleanly in Layer 2.
+gum
 # chromium — second browser, useful for headless automation (puppeteer/
 # playwright), web-app debugging, and as a fallback when Zen Browser
 # can't render a particular site. Installed but HIDDEN from the GNOME

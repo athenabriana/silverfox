@@ -1,12 +1,11 @@
 # silverfox-fox — operator CLI (bash dispatcher around `just`).
 #
 # Ships:
-#   /usr/bin/fox                                  — bash dispatcher (~20 lines)
+#   /usr/bin/fox                                  — bash dispatcher (3 lines)
 #   /usr/share/silverfox/silverfox.justfile       — verb + dotfiles recipes
-#   /usr/libexec/silverfox/chsh.sh                — login-shell switcher
 #
 # Artifacts are pre-built into /var/tmp/fox-prebuilt/ by the Containerfile;
-# bash + Justfiles + libexec scripts COPY'd direct from the build context.
+# bash + Justfiles COPY'd direct from the build context.
 # %install reads from there and lays everything down at the canonical paths.
 # The Containerfile cleans up /var/tmp/fox-prebuilt/ in the same RUN that
 # runs build-rpms.sh, so the prebuilt tree never ships in the image.
@@ -25,6 +24,7 @@ Source0:        %{name}-%{version}.tar.gz
 BuildArch:      noarch
 
 Requires:       just
+Requires:       gum
 Requires:       bash >= 4
 Requires:       coreutils
 Requires:       findutils
@@ -34,10 +34,12 @@ Requires:       sudo
 Requires:       shadow-utils
 
 %description
-silverfox-fox ships the `fox` operator CLI: a ~20-line bash dispatcher at
+silverfox-fox ships the `fox` operator CLI: a 3-line bash dispatcher at
 /usr/bin/fox that routes argv into /usr/share/silverfox/silverfox.justfile
-via `just`. Verbs in v1: chsh, sync, upgrade, rollback, status, clean,
-changelog, config, diff, doctor, toggle-banner, upgrade-firmware.
+via `just`. Verbs: chsh, clean, dotfiles-edit, dotfiles-link, dotfiles-reset,
+firmware-upgrade, home-diff, home-doctor, home-sync, motd-toggle,
+os-changelog, os-rollback, os-status, os-upgrade, theme-apply, theme-current,
+theme-update.
 
 %prep
 %setup -q
@@ -46,19 +48,25 @@ changelog, config, diff, doctor, toggle-banner, upgrade-firmware.
 install -D -m 0755 /var/tmp/fox-prebuilt/bin/fox                       %{buildroot}/usr/bin/fox
 install -D -m 0644 /var/tmp/fox-prebuilt/recipes/silverfox.justfile      %{buildroot}/usr/share/silverfox/silverfox.justfile
 install -D -m 0644 /var/tmp/fox-prebuilt/recipes/flake.nix               %{buildroot}/usr/share/silverfox/flake.nix
-# home.just removed 2026-05-14; "dotfiles link" and "dotfiles reset"
-# live directly in silverfox.justfile as quoted space-separated recipes.
-install -D -m 0755 /var/tmp/fox-prebuilt/libexec/chsh.sh               %{buildroot}/usr/libexec/silverfox/chsh.sh
 
 %files
 /usr/bin/fox
 %dir /usr/share/silverfox
 /usr/share/silverfox/silverfox.justfile
 /usr/share/silverfox/flake.nix
-%dir /usr/libexec/silverfox
-/usr/libexec/silverfox/chsh.sh
 
 %changelog
+* Wed May 14 2026 GitHub Actions <noreply@github.com> - 0.0.0-4
+- Add gum for interactive UX: gum choose in chsh, gum filter + gum spin in
+  theme-apply, gum confirm in clean/dotfiles-reset/os-rollback.
+- Inline chsh logic into justfile recipe; remove /usr/libexec/silverfox/chsh.sh.
+- Reorganize verbs with domain prefixes (home-*, os-*, dotfiles-*, theme-*,
+  firmware-*); rename sync→home-sync, diff→home-diff, doctor→home-doctor,
+  upgrade→os-upgrade, rollback→os-rollback, status→os-status,
+  changelog→os-changelog, upgrade-firmware→firmware-upgrade,
+  toggle-banner→motd-toggle, config→dotfiles-edit.
+- Remove theme-list (merged into theme-apply interactive flow).
+- Simplify fox dispatcher to 3-line exec just passthrough.
 * Thu May 14 2026 GitHub Actions <noreply@github.com> - 0.0.0-3
 - Add `"dotfiles link"` and `"dotfiles reset"` recipes directly in
   silverfox.justfile (quoted space-separated, no separate file needed).

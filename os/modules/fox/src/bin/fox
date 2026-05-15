@@ -1,37 +1,3 @@
 #!/usr/bin/env bash
-# fox — silverfox operator CLI (bash dispatcher around `just`).
-# Reads SILVERFOX_JUSTFILE and SILVERFOX_OS_RELEASE from env (test injection).
 set -euo pipefail
-
-JUSTFILE="${SILVERFOX_JUSTFILE:-/usr/share/silverfox/silverfox.justfile}"
-OS_RELEASE="${SILVERFOX_OS_RELEASE:-/etc/os-release}"
-
-case "${1:-}" in
-    ""|-h|--help)
-        exec just -f "$JUSTFILE" --list
-        ;;
-    -V|--version)
-        awk -F= '/^VERSION_ID=/ {gsub(/"/,"",$2); print $2}' "$OS_RELEASE"
-        ;;
-    dotfiles)
-        if [[ $# -lt 2 ]]; then
-            echo "Usage: fox dotfiles <link|reset>"
-        else
-            sub="$2"
-            shift 2
-            exec just -f "$JUSTFILE" "dotfiles $sub" "$@"
-        fi
-        ;;
-    home)
-        if [[ $# -lt 2 ]]; then
-            exec just -f "$JUSTFILE" --list home
-        else
-            sub="$2"
-            shift 2
-            exec just -f "$JUSTFILE" "home::$sub" "$@"
-        fi
-        ;;
-    *)
-        exec just -f "$JUSTFILE" "$@"
-        ;;
-esac
+exec just -f "${SILVERFOX_JUSTFILE:-/usr/share/silverfox/silverfox.justfile}" "$@"
