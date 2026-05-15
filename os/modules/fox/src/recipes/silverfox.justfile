@@ -155,27 +155,38 @@ sync *args:
     just -f {{ justfile() }} dotfiles-link
     if command -v nh >/dev/null 2>&1; then
         echo "nix/home-manager: aplicando configuração…"
+        _flake="${NH_FLAKE:-$HOME/Dotfiles/nix}"
+        if [ -f "$_flake/flake.lock" ]; then
+            nix flake update silverfox --flake "$_flake" 2>/dev/null || true
+        fi
         nh home switch --impure
     else
         echo "nh não encontrado — pulando sincronização nix."
     fi
+
+# Aplica tema padrão (flavours + cosmic + ghostty reload)
+theme-sync:
+    #!/usr/bin/bash
+    set -euo pipefail
     if command -v flavours >/dev/null 2>&1; then
         _data="${XDG_DATA_HOME:-$HOME/.local/share}/flavours"
         if [ ! -d "$_data/base16/schemes" ]; then
             echo "flavours: baixando temas…"
             flavours update all 2>&1 || echo "flavours: aviso — alguns temas não puderam ser baixados."
         fi
-        if ! flavours current >/dev/null 2>&1; then
-            echo "flavours: aplicando tema padrão…"
-            flavours apply onedark
+        _current=$(flavours current 2>/dev/null || true)
+        if [ -z "$_current" ]; then
+            echo "flavours: nenhum tema ativo (use 'fox theme-pick')."
+            exit 0
         fi
+        echo "flavours: reaplicando $_current…"
+        flavours apply "$_current"
         _cosmic_theme="$HOME/.cache/silverfox/cosmic-theme.ron"
         if command -v cosmic-settings >/dev/null 2>&1 && [ -f "$_cosmic_theme" ]; then
             cosmic-settings appearance import "$_cosmic_theme" >/dev/null 2>&1 \
                 && echo "cosmic: tema importado." \
                 || echo "cosmic: aviso — import falhou."
         fi
-        # Reload ghostty config (SIGUSR2 via systemd or pkill fallback)
         if pgrep -x ghostty >/dev/null 2>&1; then
             gdbus call --session --dest com.mitchellh.ghostty \
                 --object-path /com/mitchellh/ghostty \
@@ -186,7 +197,7 @@ sync *args:
     fi
 
 # Mostra padrão da distro e tema atual; oferece lista para escolher e aplicar
-home-theme:
+theme-pick:
     #!/usr/bin/bash
     set -euo pipefail
     _default_dark="onedark"
