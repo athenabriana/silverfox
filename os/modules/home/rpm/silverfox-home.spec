@@ -1,13 +1,14 @@
-# silverfox-home — user-domain seed via /etc/skel + skel-merge.
+# silverfox-home — user-domain seed via /etc/skel + home-sync.
 #
-# Ships a stow source tree at /etc/skel/Dotfiles/{shell,ghostty,nix}/
+# Ships a stow source tree at /etc/skel/Dotfiles/{shell,ghostty,nix,flavours}/
 # and a profile.d script that bootstraps ~/Dotfiles/ from skel on first
-# login, then runs stow on each package every login.
+# login, runs stow on each package every login, syncs nix home-manager,
+# and ensures a default base16 theme is applied.
 
 Name:           silverfox-home
 Version:        %{?_silverfox_version}%{!?_silverfox_version:0.0.0}
 Release:        1%{?dist}
-Summary:        silverfox user-domain seed (/etc/skel Dotfiles + skel-merge)
+Summary:        silverfox user-domain seed (/etc/skel Dotfiles + home-sync)
 License:        MIT
 URL:            https://github.com/athenabriana/silverfox
 Source0:        %{name}-%{version}.tar.gz
@@ -16,17 +17,19 @@ BuildArch:      noarch
 Requires:       stow
 
 %description
-Ships silverfox's image-default user dotfiles via /etc/skel and applies them
-on first login:
+Ships silverfox's image-default user dotfiles via /etc/skel and syncs them
+on every login:
 
-  - /etc/skel/Dotfiles/{shell,ghostty,nix}/ — stow packages com as
-    configurações padrão (shell unifica .bashrc + .zshrc com starship/
-    atuin/zoxide/mise/fzf; ghostty; nix flake para nh).
+  - /etc/skel/Dotfiles/{shell,ghostty,nix,flavours,starship,zed}/ — stow
+    packages com as configurações padrão (shell unifica .bashrc + .zshrc
+    com starship/atuin/zoxide/mise/fzf; ghostty; nix flake para nh;
+    flavours base16 com template comprehensivo para COSMIC).
 
-  - /etc/profile.d/silverfox-skel-merge.sh — no primeiro login copia a
+  - /etc/profile.d/silverfox-home-sync.sh — no primeiro login copia a
     árvore inteira de /etc/skel/Dotfiles para $HOME/Dotfiles; em todo
-    login roda stow em cada pacote para criar os symlinks em $HOME.
-    Use `fox home reset` para restaurar o estado original do sistema.
+    login roda stow, sincroniza nix home-manager em background, importa
+    o tema gerado pelo flavours via `cosmic-settings appearance import`.
+    Use `fox dotfiles-reset` para restaurar o estado original do sistema.
 
 %prep
 %setup -q
@@ -51,18 +54,21 @@ cp -a etc %{buildroot}/
 %dir /etc/skel/Dotfiles/flavours/.config/flavours
 /etc/skel/Dotfiles/flavours/.config/flavours/config.toml
 %dir /etc/skel/Dotfiles/flavours/.config/flavours/templates
-%dir /etc/skel/Dotfiles/flavours/.config/flavours/templates/cosmic-dark-accent
-%dir /etc/skel/Dotfiles/flavours/.config/flavours/templates/cosmic-dark-accent/templates
-/etc/skel/Dotfiles/flavours/.config/flavours/templates/cosmic-dark-accent/templates/default.mustache
-%dir /etc/skel/Dotfiles/flavours/.config/flavours/templates/cosmic-dark
-%dir /etc/skel/Dotfiles/flavours/.config/flavours/templates/cosmic-dark/templates
-/etc/skel/Dotfiles/flavours/.config/flavours/templates/cosmic-dark/templates/default.mustache
-%dir /etc/skel/Dotfiles/flavours/.config/flavours/templates/starship
-%dir /etc/skel/Dotfiles/flavours/.config/flavours/templates/starship/templates
-/etc/skel/Dotfiles/flavours/.config/flavours/templates/starship/templates/default.mustache
+%dir /etc/skel/Dotfiles/flavours/.config/flavours/templates/ghostty
+%dir /etc/skel/Dotfiles/flavours/.config/flavours/templates/ghostty/templates
+/etc/skel/Dotfiles/flavours/.config/flavours/templates/ghostty/templates/default.mustache
 %dir /etc/skel/Dotfiles/flavours/.config/flavours/templates/zed
 %dir /etc/skel/Dotfiles/flavours/.config/flavours/templates/zed/templates
 /etc/skel/Dotfiles/flavours/.config/flavours/templates/zed/templates/default.mustache
+%dir /etc/skel/Dotfiles/flavours/.config/flavours/templates/cosmic-theme
+%dir /etc/skel/Dotfiles/flavours/.config/flavours/templates/cosmic-theme/templates
+/etc/skel/Dotfiles/flavours/.config/flavours/templates/cosmic-theme/templates/default.mustache
+%dir /etc/skel/Dotfiles/flavours/.config/flavours/templates/cosmic-wallpaper-all
+%dir /etc/skel/Dotfiles/flavours/.config/flavours/templates/cosmic-wallpaper-all/templates
+/etc/skel/Dotfiles/flavours/.config/flavours/templates/cosmic-wallpaper-all/templates/default.mustache
+%dir /etc/skel/Dotfiles/flavours/.config/flavours/templates/cosmic-wallpaper-colors
+%dir /etc/skel/Dotfiles/flavours/.config/flavours/templates/cosmic-wallpaper-colors/templates
+/etc/skel/Dotfiles/flavours/.config/flavours/templates/cosmic-wallpaper-colors/templates/default.mustache
 %dir /etc/skel/Dotfiles/starship
 %dir /etc/skel/Dotfiles/starship/.config
 /etc/skel/Dotfiles/starship/.config/starship.toml
@@ -72,8 +78,7 @@ cp -a etc %{buildroot}/
 /etc/skel/Dotfiles/zed/.config/zed/settings.json
 %dir /etc/skel/Dotfiles/zed/.config/zed/themes
 /etc/skel/Dotfiles/zed/.config/zed/themes/base16-dark.json
-/etc/skel/Dotfiles/zed/.config/zed/themes/base16-light.json
-/etc/profile.d/silverfox-skel-merge.sh
+/etc/profile.d/silverfox-home-sync.sh
 
 %changelog
 * Thu May 14 2026 GitHub Actions <noreply@github.com> - 0.0.0-3
