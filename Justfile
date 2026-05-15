@@ -21,13 +21,11 @@ build:
 lint: fox-lint
     shellcheck os/lib/*.sh os/modules/*/*.sh
 
-# Shellcheck + bash syntax for fox dispatcher / libexec / tests
+# Shellcheck + bash syntax for fox dispatcher / tests
 fox-lint:
     bash -n os/modules/fox/src/bin/fox
-    bash -n os/modules/fox/src/libexec/chsh.sh
     shellcheck -x \
         os/modules/fox/src/bin/fox \
-        os/modules/fox/src/libexec/chsh.sh \
         os/modules/fox/src/tests/lib.sh \
         os/modules/fox/src/tests/fox.test.sh
 
