@@ -1,9 +1,8 @@
-# silverfox — personal Fedora atomic desktop derived from ublue-os/silverblue-main.
 # Layer cache: ctx-packages stage (packages.txt + repo files only) keys Layer 1's
 # dnf cache so script/spec edits skip the expensive install pass. RPMs built inline
 # in Layer 2 — no Copr project, no external repo, no token. Rebuild IS the upgrade.
 
-ARG BASE_IMAGE="ghcr.io/ublue-os/silverblue-main:44"
+ARG BASE_IMAGE="ghcr.io/ublue-os/base:44"
 
 
 FROM scratch AS ctx-packages

@@ -30,7 +30,7 @@ fox cleanup    # prune containers, flatpaks, nix store
 
 ## what you get
 
-- **GNOME** on uBlue silverblue-main
+- **COSMIC** on uBlue base
 - **ghostty** terminal, **Zen** Browser
 - `/etc/skel`-seeded dotfiles via stow at `~/Dotfiles/`
 - **mise** toolchain (node, python, go, rust...)

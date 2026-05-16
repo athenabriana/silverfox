@@ -10,7 +10,7 @@ on:
     branches: [main]
 
 env:
-  IMAGE_DESC: "Personal Fedora atomic desktop — stock GNOME on ublue-os/silverblue-main, ghostty terminal (Terra), Zen Browser (Flatpak from Flathub), curated flatpaks, GNU-stow-seeded user dotfiles, silverfox-cli-tools meta-RPM (zsh, starship, carapace-bin, mise, code, atuin, fzf, bat, eza, ripgrep, zoxide, gh, git-lfs, gcc/make/cmake, stow), and rootless podman with docker compatibility shims."
+  IMAGE_DESC: "Personal Fedora atomic desktop — COSMIC DE on ublue-os/base, ghostty terminal (Terra), Zen Browser (Flatpak from Flathub), curated flatpaks, GNU-stow-seeded user dotfiles, silverfox-cli-tools meta-RPM (zsh, starship, carapace-bin, mise, code, atuin, fzf, bat, eza, ripgrep, zoxide, gh, git-lfs, gcc/make/cmake, stow), and rootless podman with docker compatibility shims."
   IMAGE_REGISTRY: ghcr.io/${{ github.repository_owner }}
   R2_ENDPOINT: https://e30740452050b87fd107356bd87f01eb.r2.cloudflarestorage.com
   R2_BUCKET: silverfox
@@ -59,7 +59,7 @@ jobs:
     # Matrix builds two image variants from the same Containerfile:
     #   • base   — stock open-source GPU stack (amdgpu/i915/xe/nouveau)
     #   • nvidia — proprietary NVIDIA drivers, derived from
-    #     silverblue-nvidia which bakes signed kmods. The ISO chooser
+    #     base-nvidia which bakes signed kmods. The ISO chooser
     #     (iso/anaconda-hook.sh) reads `lspci` at install time and pulls
     #     whichever variant matches the user's hardware.
     strategy:
@@ -67,10 +67,10 @@ jobs:
       matrix:
         include:
           - variant: base
-            base_image: ghcr.io/ublue-os/silverblue-main:44
+            base_image: ghcr.io/ublue-os/base:44
             image_name: silverfox
           - variant: nvidia
-            base_image: ghcr.io/ublue-os/silverblue-nvidia:44
+            base_image: ghcr.io/ublue-os/base-nvidia:44
             image_name: silverfox-nvidia
 
     steps:

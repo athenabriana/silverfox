@@ -19,6 +19,5 @@ zsh-syntax-highlighting
 zsh-autosuggestions
 just
 gum
-chromium
 ghostty
 zed

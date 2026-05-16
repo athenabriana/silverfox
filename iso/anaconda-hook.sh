@@ -7,13 +7,13 @@ IMAGE_TAG="latest"
 useradd -m -G wheel liveuser
 passwd -d liveuser
 
-mkdir -p /etc/gdm
-cat > /etc/gdm/custom.conf <<'GDM'
-[daemon]
-AutomaticLoginEnable=true
-AutomaticLogin=liveuser
-WaylandEnable=true
-GDM
+# cosmic-greeter auto-login for live ISO
+mkdir -p /etc/cosmic/com.system76.CosmicGreeter/v1
+cat > /etc/cosmic/com.system76.CosmicGreeter/v1/auto_login <<'COSMIC'
+[auto_login]
+enabled = true
+username = "liveuser"
+COSMIC
 
 for unit in \
     rpm-ostreed-automatic.timer \

@@ -22,7 +22,7 @@ Requires:       podman-compose
 
 %description
 Meta-package for silverfox, a personal Fedora atomic desktop layered on
-ublue-os/silverblue-main. Installs the full silverfox customization
+ublue-os/base. Installs the full silverfox customization
 layer (sub-packages listed in Requires) plus rootless podman with
 docker compatibility shims.
 

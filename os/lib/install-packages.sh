@@ -9,16 +9,6 @@ BUILD_DIR="/ctx/build"
 MODULES=(cli-tools services kubernetes nix)
 BUILD=(fonts nvidia cosmic)
 
-log "Removing inherited base packages"
-to_remove=()
-for pkg in firefox firefox-langpacks dconf-editor \
-           gnome-software gnome-software-rpm-ostree \
-           gnome-terminal gnome-terminal-nautilus ptyxis \
-           ublue-os-just toolbox distrobox; do
-    rpm -q "$pkg" >/dev/null 2>&1 && to_remove+=("$pkg")
-done
-[ ${#to_remove[@]} -gt 0 ] && dnf5 remove -y "${to_remove[@]}"
-
 log "Staging persistent yum repos"
 shopt -s nullglob
 for repo_src in "$MODULES_DIR"/*/src/etc/yum.repos.d/*.repo; do
@@ -44,6 +34,9 @@ done
 for module in "${BUILD[@]}"; do
     _install_pkg_file "$module" "$BUILD_DIR/$module/packages.txt"
 done
+
+log "Removing unwanted COSMIC apps (we use alternatives)"
+dnf5 remove -y cosmic-terminal cosmic-store
 
 log "Cleaning dnf caches"
 dnf5 clean all
