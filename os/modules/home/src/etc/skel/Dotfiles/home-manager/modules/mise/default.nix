@@ -15,7 +15,7 @@
 
   home.file.".config/mise/config.toml".source = ./mise.toml;
 
-  home.activation.syncMise =
+  home.activation.miseManagement =
     let
       miseBin = "${pkgs.mise}/bin/mise";
       misePkgBinDir = "${pkgs.mise}/bin";

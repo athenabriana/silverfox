@@ -1,17 +1,17 @@
 # home/default.nix — user identity + globally-installed packages.
 #
-# username/homeDirectory use the __USER__ placeholder which is
-# substituted at first-login by silverfox-home-sync.sh. To customize,
-# edit this file and run `fox sync`.
+# username/homeDirectory use the __USER__ placeholder and stateVersion
+# uses __STATE_VERSION__; both are substituted at first-login by
+# silverfox-home-sync.sh (which delegates to `fox dotfiles-sync`).
+# To customize, edit this file and run `fox sync`.
 
 { pkgs, ... }:
 {
   home = {
     username = "__USER__";
     homeDirectory = "/home/__USER__";
-    stateVersion = "24.11";
+    stateVersion = "__STATE_VERSION__";
     packages = [
-      pkgs.opencode
       pkgs.atuin
       pkgs.fzf
       pkgs.bat

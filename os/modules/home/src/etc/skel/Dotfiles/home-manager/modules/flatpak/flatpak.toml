@@ -1,0 +1,11 @@
+[remotes]
+flathub = "https://dl.flathub.org/repo/flathub.flatpakrepo"
+
+[packages]
+"app.zen_browser.zen" = "flathub"
+"com.github.tchx84.Flatseal" = "flathub"
+"com.mattjakeman.ExtensionManager" = "flathub"
+"io.podman_desktop.PodmanDesktop" = "flathub"
+"net.nokyan.Resources" = "flathub"
+"it.mijorus.smile" = "flathub"
+"org.gnome.World.PikaBackup" = "flathub"

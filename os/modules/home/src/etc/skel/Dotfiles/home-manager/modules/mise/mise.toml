@@ -6,17 +6,18 @@ python = "latest"
 uv = "latest"
 go = "latest"
 rust = "stable"
+"npm:opencode-ai" = "latest"
 
 [settings]
 trusted_config_paths = [ "/" ]
 auto_install = true
 not_found_auto_install = true
 idiomatic_version_file_enable_tools = [
-  "bun",
-  "go",
   "node",
+  "bun",
   "pnpm",
   "python",
+  "go",
   "rust",
   "terraform",
 ]

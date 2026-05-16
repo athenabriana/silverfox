@@ -41,10 +41,15 @@ dotfiles-sync:
         echo "~/Dotfiles missing — restoring from $SKEL…"
         cp -a "$SKEL" "$HOME_DOTFILES"
     fi
+    STATE_VERSION=$(date +%y.%m)
     while IFS= read -r -d '' f; do
         if grep -q '__USER__' "$f" 2>/dev/null; then
             echo "Replacing __USER__ → $USER in ${f#"$HOME_DOTFILES/home-manager/"}"
             sed -i "s/__USER__/$USER/g" "$f"
+        fi
+        if grep -q '__STATE_VERSION__' "$f" 2>/dev/null; then
+            echo "Replacing __STATE_VERSION__ → $STATE_VERSION in ${f#"$HOME_DOTFILES/home-manager/"}"
+            sed -i "s/__STATE_VERSION__/$STATE_VERSION/g" "$f"
         fi
     done < <(find "$HOME_DOTFILES/home-manager" -type f -print0 2>/dev/null || true)
     if command -v stow >/dev/null 2>&1 && [ -d "$HOME_DOTFILES/stow" ]; then

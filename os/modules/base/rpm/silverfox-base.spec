@@ -27,8 +27,8 @@ layer (sub-packages listed in Requires) plus rootless podman with
 docker compatibility shims.
 
 Owns: /etc/os-release (silverfox identity). Flatpaks managed
-declaratively via nix-flatpak in the user's flake.nix (flathub remote +
-curated set + nh home switch).
+declaratively via a TOML-driven home-manager activation in the user's
+flake.nix (flathub remote + curated set + nh home switch).
 
 %prep
 %setup -q

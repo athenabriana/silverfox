@@ -7,7 +7,6 @@
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    nix-flatpak.url = "github:gmodena/nix-flatpak";
     silverfox = {
       url = "path:/usr/share/silverfox";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -18,23 +17,23 @@
     {
       nixpkgs,
       home-manager,
-      nix-flatpak,
       silverfox,
       ...
     }:
     let
-      system = "x86_64-linux";
-      pkgs = nixpkgs.legacyPackages.${system};
+      pkgs = import nixpkgs {
+        system = "x86_64-linux";
+        config.allowUnfree = true;
+      };
     in
     {
       homeConfigurations."__USER__" = home-manager.lib.homeManagerConfiguration {
         inherit pkgs;
         modules = [
-          "${nix-flatpak}/modules/home-manager.nix"
           silverfox.homeManagerModules.syspkgs
-          ./modules/home.nix
-          ./modules/mise.nix
-          ./modules/flatpak.nix
+          ./modules/home
+          ./modules/mise
+          ./modules/flatpak
         ];
       };
     };

@@ -36,10 +36,14 @@ cp -a etc %{buildroot}/
 %dir /etc/skel/Dotfiles/home-manager
 /etc/skel/Dotfiles/home-manager/flake.nix
 %dir /etc/skel/Dotfiles/home-manager/modules
-/etc/skel/Dotfiles/home-manager/modules/home.nix
-/etc/skel/Dotfiles/home-manager/modules/mise.nix
-/etc/skel/Dotfiles/home-manager/modules/mise.toml
-/etc/skel/Dotfiles/home-manager/modules/flatpak.nix
+%dir /etc/skel/Dotfiles/home-manager/modules/home
+/etc/skel/Dotfiles/home-manager/modules/home/default.nix
+%dir /etc/skel/Dotfiles/home-manager/modules/mise
+/etc/skel/Dotfiles/home-manager/modules/mise/default.nix
+/etc/skel/Dotfiles/home-manager/modules/mise/mise.toml
+%dir /etc/skel/Dotfiles/home-manager/modules/flatpak
+/etc/skel/Dotfiles/home-manager/modules/flatpak/default.nix
+/etc/skel/Dotfiles/home-manager/modules/flatpak/flatpak.toml
 %dir /etc/skel/Dotfiles/stow
 %dir /etc/skel/Dotfiles/stow/shell
 /etc/skel/Dotfiles/stow/shell/.bashrc
@@ -87,6 +91,17 @@ cp -a etc %{buildroot}/
 /etc/profile.d/silverfox-home-sync.sh
 
 %changelog
+* Fri May 15 2026 GitHub Actions <noreply@github.com> - 0.0.0-4
+- home-manager modules: reshape modules/<name>.nix into
+  modules/<name>/default.nix dirs (home, mise, flatpak) so each module
+  can ship companion data files. Drop nix-flatpak input; flatpak is now
+  managed by a TOML-driven activation script (modules/flatpak/flatpak.toml).
+  modules/home/default.nix gains a __STATE_VERSION__ placeholder that
+  fox dotfiles-sync substitutes with `date +%y.%m` at first login.
+  mise.toml adds opencode-ai (formerly a nixpkgs entry). zed/settings.json
+  seeds agent_servers (claude-acp, opencode) and the opencode default
+  model. starship.toml gains section headers. flake.nix now imports
+  nixpkgs with allowUnfree = true.
 * Thu May 14 2026 GitHub Actions <noreply@github.com> - 0.0.0-3
 - skel-merge.sh: replace "always copies new files on login" with
   single bootstrap (only copies if ~/Dotfiles/ does not exist) + stow always.
